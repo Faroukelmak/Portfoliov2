@@ -71,7 +71,9 @@
   }
   .lang-switch button.active{color:#fff;}
   .lang-switch button:hover{color:#fff;}
+  .cta-icon{display:none;width:17px;height:17px;}
   .nav-cta{font-size:13.5px;font-weight:500;padding:11px 24px;border-radius:999px;
+    display:inline-flex;align-items:center;justify-content:center;
     border:1px solid rgba(255,255,255,.26);transition:all .4s var(--ease);}
   .nav-cta:hover{background:rgba(255,255,255,.09);border-color:rgba(255,255,255,.5);transform:translateY(-2px);}
   .burger{display:none;position:relative;z-index:520;width:40px;height:40px;
@@ -168,7 +170,15 @@
   @keyframes drip{0%{top:-100%;}60%{top:100%;}100%{top:100%;}}
 
   @media (max-width:1100px){
-    .nav,.nav.scrolled{padding:18px 24px;}
+    .nav,.nav.scrolled{padding:18px 20px;}
+    .nav-right{gap:8px;}
+    .nav-cta{width:38px;height:38px;padding:0;border-radius:50%;border-color:rgba(255,255,255,.18);}
+    .nav-cta .cta-label{display:none;}
+    .nav-cta .cta-icon{display:block;color:var(--dim);}
+    .nav-cta:hover{transform:none;}
+    .lang-switch{padding:2px;}
+    .lang-switch button{font-size:10px;letter-spacing:.04em;padding:6px 9px;}
+    .brand{font-size:11.5px;letter-spacing:.04em;}
     .nav-links{
       display:flex;position:fixed;inset:0;z-index:500;
       flex-direction:column;align-items:flex-start;justify-content:center;
@@ -204,6 +214,7 @@
     .bloom{right:-30%;width:100vw;}
   }
   @media (max-width:600px){
+    .brand{font-size:10.5px;letter-spacing:.03em;}
     h1{font-size:2.35rem;}
     .copy{padding:38vh 0 90px;}
     .stat{padding-right:18px;margin-right:18px;}
@@ -555,7 +566,7 @@
     <a class="icon-btn" href="https://github.com/Faroukelmak" target="_blank" rel="noopener" aria-label="GitHub">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.9a3.4 3.4 0 00-.9-2.6c3-.3 6.2-1.5 6.2-6.7A5.2 5.2 0 0019.9 5 4.9 4.9 0 0019.8.5S18.6.1 16 1.9a13.4 13.4 0 00-7 0C6.4.1 5.2.5 5.2.5A4.9 4.9 0 005.1 5a5.2 5.2 0 00-1.4 3.6c0 5.2 3.2 6.4 6.2 6.7a3.4 3.4 0 00-.9 2.6V22"/></svg>
     </a>
-    <a class="nav-cta" href="#contact" data-i18n data-fr="Me contacter" data-en="Get in touch">Me contacter</a>
+    <a class="nav-cta" href="#contact" aria-label="Me contacter"><span class="cta-label" data-i18n data-fr="Me contacter" data-en="Get in touch">Me contacter</span><svg class="cta-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="5" width="19" height="14" rx="2.6"/><path d="M3 7l9 6 9-6"/></svg></a>
     <button class="burger" id="burger" aria-label="Ouvrir le menu" aria-expanded="false" aria-controls="navLinks"><span></span><span></span></button>
   </div>
 </nav>
@@ -1046,6 +1057,8 @@
       el.dispatchEvent(new CustomEvent('i18n:update'));
     });
     if(window.ScrollTrigger) ScrollTrigger.refresh();
+    var cta=document.querySelector('.nav-cta'), lbl=cta&&cta.querySelector('.cta-label');
+    if(cta&&lbl) cta.setAttribute('aria-label',lbl.textContent);
     sw.classList.toggle('en',lang==='en');
     sw.querySelectorAll('button').forEach(function(b){
       b.classList.toggle('active',b.dataset.lang===lang);
