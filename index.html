@@ -41,14 +41,14 @@
     -webkit-backdrop-filter:blur(24px) saturate(180%);backdrop-filter:blur(24px) saturate(180%);
     border-bottom:1px solid var(--line);
   }
-  .brand{display:flex;align-items:center;gap:11px;font-size:13.5px;font-weight:600;letter-spacing:.05em;}
+  .brand{display:flex;align-items:center;gap:11px;font-size:13.5px;font-weight:600;letter-spacing:.05em;position:relative;z-index:520;}
   .nav-links{display:flex;align-items:center;gap:32px;}
   .nav-links a{font-size:13.5px;color:var(--dim);position:relative;padding:4px 0;transition:color .35s var(--ease);}
   .nav-links a::after{content:"";position:absolute;left:0;right:0;bottom:-2px;height:1px;background:var(--violet-lt);
     transform:scaleX(0);transform-origin:left;transition:transform .45s var(--ease);}
   .nav-links a:hover{color:#fff;}
   .nav-links a:hover::after{transform:scaleX(1);}
-  .nav-right{display:flex;align-items:center;gap:11px;}
+  .nav-right{display:flex;align-items:center;gap:11px;position:relative;z-index:520;}
   .icon-btn{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;
     border:1px solid var(--line);color:var(--dim);transition:all .4s var(--ease);}
   .icon-btn svg{width:15px;height:15px;}
@@ -74,8 +74,15 @@
   .nav-cta{font-size:13.5px;font-weight:500;padding:11px 24px;border-radius:999px;
     border:1px solid rgba(255,255,255,.26);transition:all .4s var(--ease);}
   .nav-cta:hover{background:rgba(255,255,255,.09);border-color:rgba(255,255,255,.5);transform:translateY(-2px);}
-  .burger{display:none;background:none;border:none;color:#fff;cursor:pointer;padding:6px;}
-  .burger svg{width:22px;height:22px;}
+  .burger{display:none;position:relative;z-index:520;width:40px;height:40px;
+    background:none;border:none;cursor:pointer;padding:0;}
+  .burger span{position:absolute;left:10px;width:20px;height:1.7px;border-radius:2px;
+    background:#fff;transition:transform .45s var(--ease),opacity .3s var(--ease);}
+  .burger span:nth-child(1){top:16px;}
+  .burger span:nth-child(2){top:22px;}
+  body.nav-open .burger span:nth-child(1){transform:translateY(3px) rotate(45deg);}
+  body.nav-open .burger span:nth-child(2){transform:translateY(-3px) rotate(-45deg);}
+  body.nav-open{overflow:hidden;}
 
   /* ================ HERO ================ */
   .hero{position:relative;min-height:100vh;overflow:hidden;display:flex;}
@@ -162,7 +169,32 @@
 
   @media (max-width:1100px){
     .nav,.nav.scrolled{padding:18px 24px;}
-    .nav-links{display:none;} .burger{display:block;} .nav-right .icon-btn{display:none;}
+    .nav-links{
+      display:flex;position:fixed;inset:0;z-index:500;
+      flex-direction:column;align-items:flex-start;justify-content:center;
+      gap:0;padding:0 30px;
+      background:rgba(8,4,18,.94);
+      -webkit-backdrop-filter:blur(26px) saturate(180%);backdrop-filter:blur(26px) saturate(180%);
+      opacity:0;visibility:hidden;pointer-events:none;
+      transition:opacity .45s var(--ease),visibility .45s var(--ease);
+    }
+    body.nav-open .nav-links{opacity:1;visibility:visible;pointer-events:auto;}
+    .nav-links a{
+      font-size:clamp(26px,7.5vw,34px);font-weight:500;letter-spacing:-.03em;color:#fff;
+      width:100%;padding:17px 0;border-bottom:1px solid rgba(255,255,255,.08);
+      opacity:0;transform:translateY(16px);
+      transition:opacity .5s var(--ease),transform .5s var(--ease);
+    }
+    .nav-links a::after{display:none;}
+    body.nav-open .nav-links a{opacity:1;transform:none;}
+    body.nav-open .nav-links a:nth-child(1){transition-delay:0.10s}
+    body.nav-open .nav-links a:nth-child(2){transition-delay:0.14s}
+    body.nav-open .nav-links a:nth-child(3){transition-delay:0.18s}
+    body.nav-open .nav-links a:nth-child(4){transition-delay:0.23s}
+    body.nav-open .nav-links a:nth-child(5){transition-delay:0.27s}
+    body.nav-open .nav-links a:nth-child(6){transition-delay:0.32s}
+    body.nav-open .nav-links a:nth-child(7){transition-delay:0.36s}
+    .burger{display:block;} .nav-right .icon-btn{display:none;}
     .hero-bg img{object-position:26% top;}
     .hero-bg::after{background:
       linear-gradient(180deg,rgba(12,7,25,.6) 0%,rgba(12,7,25,.1) 22%,rgba(12,7,25,.72) 52%,rgba(12,7,25,.96) 78%);}
@@ -182,6 +214,7 @@
 
   /* ================= SHARED SECTION SYSTEM ================= */
   .sec{position:relative;padding:clamp(96px,13vh,170px) 0;}
+  section[id]{scroll-margin-top:96px;}
   .wrap{width:100%;max-width:1320px;margin:0 auto;padding:0 52px;}
   .sec-line{height:1px;background:var(--line);width:100%;}
 
@@ -341,6 +374,9 @@
 
   @media (max-width:1100px){
     .wrap{padding:0 26px;}
+    .sec{padding:clamp(80px,11vh,120px) 0;}
+    #about{padding-top:120px;}
+    section[id]{scroll-margin-top:80px;}
     .about-cols{grid-template-columns:1fr;gap:44px;}
     .proj{grid-template-columns:repeat(2,1fr);}
     .skill-grid{grid-template-columns:repeat(2,1fr);gap:30px;}
@@ -498,7 +534,7 @@
 
 <nav class="nav" id="nav">
   <a class="brand" href="#">FAROUK EL MAKHCHOUNE</a>
-  <div class="nav-links">
+  <div class="nav-links" id="navLinks">
     <a href="#about" data-i18n data-fr="à propos" data-en="about">à propos</a>
     <a href="#experience" data-i18n data-fr="expérience" data-en="experience">expérience</a>
     <a href="#parcours" data-i18n data-fr="parcours" data-en="education">parcours</a>
@@ -520,9 +556,7 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.9a3.4 3.4 0 00-.9-2.6c3-.3 6.2-1.5 6.2-6.7A5.2 5.2 0 0019.9 5 4.9 4.9 0 0019.8.5S18.6.1 16 1.9a13.4 13.4 0 00-7 0C6.4.1 5.2.5 5.2.5A4.9 4.9 0 005.1 5a5.2 5.2 0 00-1.4 3.6c0 5.2 3.2 6.4 6.2 6.7a3.4 3.4 0 00-.9 2.6V22"/></svg>
     </a>
     <a class="nav-cta" href="#contact" data-i18n data-fr="Me contacter" data-en="Get in touch">Me contacter</a>
-    <button class="burger" aria-label="Menu">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="8" x2="20" y2="8"/><line x1="4" y1="16" x2="20" y2="16"/></svg>
-    </button>
+    <button class="burger" id="burger" aria-label="Ouvrir le menu" aria-expanded="false" aria-controls="navLinks"><span></span><span></span></button>
   </div>
 </nav>
 
@@ -548,7 +582,7 @@
           <span data-i18n data-fr="Voir mes projets" data-en="View my work">Voir mes projets</span>
           <span class="circle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M9 7h8v8"/></svg></span>
         </a>
-        <a class="btn btn-ghost" href="#experience" data-i18n data-fr="Mon parcours" data-en="My background">Mon parcours</a>
+        <a class="btn btn-ghost" href="#experience" data-i18n data-fr="Mon expérience" data-en="My experience">Mon expérience</a>
       </div>
       <div class="stats">
         <div class="stat"><div class="n">4<em>+</em></div><div class="l" data-i18n data-fr="Expériences IA &amp; Data" data-en="AI &amp; Data internships">Expériences IA &amp; Data</div></div>
@@ -956,6 +990,49 @@
 </footer>
 
 <script>
+
+  /* ---- mobile menu ---- */
+  (function(){
+    var burger=document.getElementById('burger'), panel=document.getElementById('navLinks');
+    if(!burger||!panel) return;
+    function setMenu(open){
+      document.body.classList.toggle('nav-open',open);
+      burger.setAttribute('aria-expanded',open?'true':'false');
+      burger.setAttribute('aria-label',open?'Fermer le menu':'Ouvrir le menu');
+      if(window.lenis){ open ? window.lenis.stop() : window.lenis.start(); }
+    }
+    burger.addEventListener('click',function(){
+      setMenu(!document.body.classList.contains('nav-open'));
+    });
+    /* every in-page link must go through Lenis, otherwise it snaps back */
+    function navOffset(){ return window.innerWidth<=1100 ? -72 : -92; }
+    document.querySelectorAll('a[href^="#"]').forEach(function(a){
+      var id=a.getAttribute('href');
+      if(!id || id.length<2) return;
+      a.addEventListener('click',function(e){
+        var el=document.querySelector(id);
+        if(!el) return;
+        e.preventDefault();
+        setMenu(false);
+        if(window.lenis && typeof window.lenis.scrollTo==='function'){
+          window.lenis.scrollTo(el,{offset:navOffset(),duration:1.15});
+        }else{
+          window.scrollTo({
+            top: el.getBoundingClientRect().top + window.pageYOffset + navOffset(),
+            behavior:'smooth'
+          });
+        }
+        if(history.replaceState) history.replaceState(null,'',id);
+      });
+    });
+    document.addEventListener('keydown',function(e){
+      if(e.key==='Escape') setMenu(false);
+    });
+    window.addEventListener('resize',function(){
+      if(window.innerWidth>1100) setMenu(false);
+    });
+  })();
+
   var sw=document.getElementById('langSwitch');
   function setLang(lang){
     document.documentElement.lang=lang;
@@ -994,7 +1071,7 @@
     var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     /* --- Lenis drives the scroll, GSAP's ticker drives Lenis --- */
-    var lenis = new Lenis({ lerp:0.09, wheelMultiplier:1, anchors:true });
+    var lenis = new Lenis({ lerp:0.09, wheelMultiplier:1 });
     lenis.on('scroll', ScrollTrigger.update);
     gsap.ticker.add(function(t){ lenis.raf(t*1000); });
     gsap.ticker.lagSmoothing(0);
