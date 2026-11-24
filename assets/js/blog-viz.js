@@ -1,7 +1,8 @@
 /*
  * Animated explainers for blog articles.
  * In Markdown:  <div class="viz" data-viz="agent-loop"></div>
- * Available:    agent-loop, summarization, human-in-the-loop
+ * Available:    agent-loop, summarization, human-in-the-loop,
+ *               text-to-object, schema-flow, nested, validation-gate, labels-vs-check
  * Labels follow <html lang>. With prefers-reduced-motion the final state is shown, no animation.
  */
 (function () {
@@ -158,7 +159,124 @@
     });
   }
 
-  var VIZ = { 'agent-loop': agentLoop, summarization: summarization, 'human-in-the-loop': hitl };
+
+  /* ------------------------------------------------------------ 4. free text -> object */
+  function textToObject(root) {
+    var wrap = el('div', 'vz-two');
+    var left = el('div', 'vz-panel');
+    left.innerHTML = '<small>' + L('Sans schéma, du texte libre', 'Without a schema, free text') + '</small><p class="vz-text">' +
+      '<b class="tk" data-k="0">Inception</b> (<b class="tk" data-k="1">2010</b>) is a science-fiction film directed by ' +
+      '<b class="tk" data-k="2">Christopher Nolan</b>. It has a rating of about <b class="tk" data-k="3">8.8</b>/10 and follows a thief who steals secrets through dreams...</p>';
+    var mid = el('span', 'vz-arrow big', '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>');
+    var right = el('div', 'vz-panel vz-obj');
+    var fields = [['title', 'str', '"Inception"'], ['year', 'int', '2010'], ['director', 'str', '"Christopher Nolan"'], ['rating', 'float', '8.8']];
+    right.innerHTML = '<small>' + L('Avec un schéma, un objet Movie', 'With a schema, a Movie object') + '</small>' +
+      fields.map(function (f, i) { return '<div class="vz-field" data-k="' + i + '"><span class="n">' + f[0] + '</span><span class="t">' + f[1] + '</span><span class="v">' + f[2] + '</span></div>'; }).join('');
+    wrap.append(left, mid, right); root.appendChild(wrap);
+    var tks = left.querySelectorAll('.tk'), fs = right.querySelectorAll('.vz-field');
+    loop(root, async function () {
+      tks.forEach(function (t) { t.classList.remove('on'); }); fs.forEach(function (f) { f.classList.remove('in', 'on'); });
+      right.classList.remove('done'); await wait(900);
+      for (var i = 0; i < tks.length; i++) {
+        tks[i].classList.add('on'); fs[i].classList.add('in', 'on'); await wait(850); fs[i].classList.remove('on');
+      }
+      right.classList.add('done'); await wait(2200);
+    });
+  }
+
+  /* ------------------------------------------------------------ 5. class -> tool -> values -> object */
+  function schemaFlow(root) {
+    var cols = [
+      [L('1. Votre classe', '1. Your class'), '<code>class Movie(BaseModel)</code><span>title: str</span><span>year: int</span><span>rating: float</span>'],
+      [L('2. Outil envoyé au modèle', '2. Tool sent to the model'), '<code>tool "Movie"</code><span>title  ' + L('texte', 'string') + '</span><span>year  ' + L('entier', 'integer') + '</span><span>rating  ' + L('nombre', 'number') + '</span>'],
+      [L('3. Le modèle remplit', '3. The model fills it in'), '<code>Movie(...)</code><span>title = "Inception"</span><span>year = 2010</span><span>rating = 8.8</span>'],
+      [L('4. Pydantic vérifie', '4. Pydantic checks'), '<code>Movie</code><span class="ok">title ' + ICON.check + '</span><span class="ok">year ' + ICON.check + '</span><span class="ok">rating ' + ICON.check + '</span>'],
+    ];
+    var row = el('div', 'vz-flow');
+    var cards = cols.map(function (c, i) {
+      var card = el('div', 'vz-fcard', '<small>' + c[0] + '</small>' + c[1]);
+      row.appendChild(card);
+      if (i < cols.length - 1) row.appendChild(el('span', 'vz-arrow', '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>'));
+      return card;
+    });
+    root.appendChild(row);
+    loop(root, async function () {
+      cards.forEach(function (c) { c.classList.remove('in', 'on'); });
+      for (var i = 0; i < cards.length; i++) {
+        cards[i].classList.add('in', 'on'); await wait(1300); cards[i].classList.remove('on');
+      }
+      await wait(1800);
+    });
+  }
+
+  /* ------------------------------------------------------------ 6. nested objects */
+  function nested(root) {
+    var box = el('div', 'vz-nest');
+    box.innerHTML = '<div class="vz-nest-h"><code>MovieDetails</code><span>title = "Inception"</span><span>year = 2010</span></div>' +
+      '<div class="vz-nest-row"><span class="n">genres</span><div class="vz-chips"></div></div>' +
+      '<div class="vz-nest-row"><span class="n">cast</span><div class="vz-actors"></div></div>';
+    root.appendChild(box);
+    var chips = box.querySelector('.vz-chips'), actors = box.querySelector('.vz-actors');
+    var G = ['Science fiction', 'Action', 'Thriller'];
+    var A = [['Leonardo DiCaprio', 'Dom Cobb'], ['Joseph Gordon-Levitt', 'Arthur'], ['Elliot Page', 'Ariadne']];
+    loop(root, async function () {
+      chips.innerHTML = ''; actors.innerHTML = ''; await wait(700);
+      for (var i = 0; i < G.length; i++) { var c = el('span', 'vz-chip', '"' + G[i] + '"'); chips.appendChild(c); (function (c) { requestAnimationFrame(function () { c.classList.add('in'); }); })(c); await wait(350); }
+      await wait(400);
+      for (var j = 0; j < A.length; j++) {
+        var a = el('div', 'vz-actor', '<code>Actor</code><span>name = "' + A[j][0] + '"</span><span>role = "' + A[j][1] + '"</span>');
+        actors.appendChild(a); (function (a) { requestAnimationFrame(function () { a.classList.add('in'); }); })(a); await wait(700);
+      }
+      await wait(2400);
+    });
+  }
+
+  /* ------------------------------------------------------------ 7. validation gate */
+  function validationGate(root) {
+    var rows = [
+      ['year', '"2010"', L('texte', 'string'), '2010', L('converti en entier', 'converted to integer'), 'ok'],
+      ['rating', '88', '', L('refusé', 'rejected'), L('doit être ≤ 10', 'must be ≤ 10'), 'no'],
+      ['phone', '"+33 6 42 75 98 75"', '', '"+33642759875"', L('nettoyé par normalize_phone()', 'cleaned by normalize_phone()'), 'ok'],
+      ['phone', '"06 42 75 98 75"', '', L('refusé', 'rejected'), 'Missing country code', 'no'],
+    ];
+    var head = el('div', 'vz-gate-head', '<span>' + L('Réponse du modèle', 'Model answer') + '</span><span>Pydantic</span><span>' + L('Résultat', 'Result') + '</span>');
+    var list = el('div', 'vz-gate');
+    var items = rows.map(function (r) {
+      var it = el('div', 'vz-grow',
+        '<div class="in"><span class="n">' + r[0] + '</span> <code>' + r[1] + '</code>' + (r[2] ? '<em>' + r[2] + '</em>' : '') + '</div>' +
+        '<div class="gate"><span class="dot"></span></div>' +
+        '<div class="out ' + r[5] + '"><span class="ic2">' + (r[5] === 'ok' ? ICON.check : ICON.cross) + '</span><div><code>' + r[3] + '</code><em>' + r[4] + '</em></div></div>');
+      list.appendChild(it); return it;
+    });
+    root.append(head, list);
+    loop(root, async function () {
+      items.forEach(function (i) { i.classList.remove('s1', 's2', 's3'); });
+      for (var i = 0; i < items.length; i++) {
+        items[i].classList.add('s1'); await wait(600);
+        items[i].classList.add('s2'); await wait(700);
+        items[i].classList.add('s3'); await wait(900);
+      }
+      await wait(2200);
+    });
+  }
+
+  /* ------------------------------------------------------------ 8. TypedDict vs Pydantic */
+  function labelsVsCheck(root) {
+    var inp = el('div', 'vz-input', '<small>' + L('Le modèle renvoie', 'The model returns') + '</small><code>year = "deux mille dix"</code>');
+    var lanes = el('div', 'vz-lanes');
+    var td = el('div', 'vz-lane', '<small>TypedDict / dataclass</small><div class="vz-lane-res warn">' + ICON.check + '<span>' + L('accepté sans contrôle', 'accepted, nothing checked') + '</span></div><p>' + L('La valeur entre dans votre code et casse plus loin', 'The value enters your code and breaks later') + '</p>');
+    var pd = el('div', 'vz-lane', '<small>Pydantic</small><div class="vz-lane-res no">' + ICON.cross + '<span>' + L('refusé à l\'entrée', 'rejected at the door') + '</span></div><p>' + L('year doit être un entier', 'year must be an integer') + '</p>');
+    lanes.append(td, pd); root.append(inp, lanes);
+    loop(root, async function () {
+      [inp, td, pd].forEach(function (x) { x.classList.remove('in'); });
+      inp.classList.add('in'); await wait(1100);
+      td.classList.add('in'); await wait(1300);
+      pd.classList.add('in'); await wait(2600);
+    });
+  }
+
+  var VIZ = { 'agent-loop': agentLoop, summarization: summarization, 'human-in-the-loop': hitl,
+    'text-to-object': textToObject, 'schema-flow': schemaFlow, nested: nested, 'validation-gate': validationGate, 'labels-vs-check': labelsVsCheck };
   document.querySelectorAll('.viz[data-viz]').forEach(function (root) {
     var fn = VIZ[root.dataset.viz]; if (fn) fn(root);
   });
