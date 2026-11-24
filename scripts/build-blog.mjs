@@ -149,18 +149,18 @@ const metaLine = (p) => `<time datetime="${p.date}">${fmtDate(p.dateObj)}</time>
 /* ---------------------------------------------------------------- listing */
 const listing = `${head({
   title: `Blog · ${AUTHOR}`,
-  description: "Architectures de modèles, VLM, librairies Python, frameworks, LangChain, LangGraph : ce que je construis et décortique, un sujet à la fois.",
+  description: "Ce que j'apprends, ce que je teste et ce que je construis. Un sujet à la fois, en quelques minutes de lecture.",
   url: `${SITE}/blog/`,
 })}
 ${nav()}
 <main class="wrap">
   <header class="blog-head">
     <span class="kicker rise">Blog</span>
-    <h1 class="rise" style="animation-delay:.08s">Ce que je construis, <em>expliqué simplement.</em></h1>
-    <p class="rise" style="animation-delay:.16s">Architectures de modèles, VLM, librairies Python, frameworks, middlewares LangChain, LangGraph… Un sujet à la fois, en quelques minutes de lecture.</p>
+    <h1 class="rise" style="animation-delay:.08s">Idées, notes <em>et découvertes.</em></h1>
+    <p class="rise" style="animation-delay:.16s">Ce que j'apprends, ce que je teste et ce que je construis. Un sujet à la fois, en quelques minutes de lecture.</p>
     <label class="search rise" style="animation-delay:.24s">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
-      <input id="q" type="search" placeholder="Rechercher : Qwen, LangGraph, VLM…" autocomplete="off" aria-label="Rechercher dans le blog">
+      <input id="q" type="search" placeholder="Rechercher un article…" autocomplete="off" aria-label="Rechercher dans le blog">
       <kbd>/</kbd>
     </label>
   </header>
@@ -257,7 +257,7 @@ const rss = `<?xml version="1.0" encoding="UTF-8"?>
   <title>Blog · ${AUTHOR}</title>
   <link>${SITE}/blog/</link>
   <atom:link href="${SITE}/blog/feed.xml" rel="self" type="application/rss+xml"/>
-  <description>Notes rapides sur l'IA en production.</description>
+  <description>Idées, notes et découvertes.</description>
   <language>fr</language>
 ${posts.map((p) => `  <item>
     <title>${esc(p.title)}</title>
