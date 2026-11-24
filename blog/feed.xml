@@ -4,7 +4,7 @@
   <title>Blog · Farouk El Makhchoune</title>
   <link>https://faroukelmak.vercel.app/blog/</link>
   <atom:link href="https://faroukelmak.vercel.app/blog/feed.xml" rel="self" type="application/rss+xml"/>
-  <description>Notes rapides sur l'IA en production.</description>
+  <description>Idées, notes et découvertes.</description>
   <language>fr</language>
   <item>
     <title>PaddleOCR en production sur CPU : pourquoi je suis passé par ONNX Runtime</title>

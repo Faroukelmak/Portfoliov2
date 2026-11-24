@@ -59,11 +59,16 @@ a{color:inherit;text-decoration:none;}
 .blog-head h1{font-size:clamp(2.3rem,5vw,4.2rem);font-weight:400;letter-spacing:-.045em;line-height:1.02;margin:0 0 22px;max-width:15ch;}
 .blog-head h1 em{font-style:normal;color:var(--violet-lt);}
 .blog-head p{font-size:16px;line-height:1.65;color:var(--dim);max-width:54ch;margin:0;}
-.filters{display:flex;flex-wrap:wrap;gap:8px;margin:44px 0 0;}
-.filters button{font-family:var(--font);background:none;cursor:pointer;font-size:12px;color:var(--dim);
-  border:1px solid var(--line);padding:7px 14px;border-radius:999px;transition:all .35s var(--ease);}
-.filters button:hover{color:#fff;border-color:rgba(255,255,255,.3);}
-.filters button.on{background:#fff;color:#150C2C;border-color:#fff;}
+.search{display:flex;align-items:center;gap:12px;margin:44px 0 0;max-width:560px;padding:0 16px;height:54px;
+  border:1px solid var(--line);border-radius:999px;background:rgba(255,255,255,.03);cursor:text;
+  transition:border-color .35s var(--ease),background .35s var(--ease),box-shadow .35s var(--ease);}
+.search:focus-within{border-color:rgba(201,169,255,.6);background:rgba(255,255,255,.05);box-shadow:0 0 0 4px rgba(168,85,247,.12);}
+.search svg{width:18px;height:18px;color:var(--dimmer);flex-shrink:0;}
+.search input{flex:1;min-width:0;background:none;border:none;outline:none;color:#fff;font-family:var(--font);font-size:15px;}
+.search input::placeholder{color:var(--dimmer);}
+.search input::-webkit-search-cancel-button{filter:invert(1);opacity:.5;}
+.search kbd{font-family:var(--mono);font-size:11px;color:var(--dimmer);border:1px solid var(--line);border-radius:6px;padding:2px 7px;}
+@media (hover:none){.search kbd{display:none;}}
 
 .posts{list-style:none;margin:0 0 120px;padding:0;border-top:1px solid var(--line);}
 .post-row{border-bottom:1px solid var(--line);}
@@ -77,7 +82,8 @@ a{color:inherit;text-decoration:none;}
 .post-row .arrow{width:22px;height:22px;margin-top:10px;color:var(--dimmer);transition:transform .5s var(--ease),color .4s var(--ease);}
 .post-row a:hover .arrow{transform:translate(3px,-3px);color:var(--violet-lt);}
 .post-row a:hover h2{color:#fff;}
-.post-row[hidden]{display:none;}
+.post-row[hidden],.posts[hidden]{display:none;}
+#none{padding:48px 0 140px;}
 .empty{color:var(--dim);padding:40px 0 120px;}
 
 /* ---------- article ---------- */
@@ -153,6 +159,7 @@ a{color:inherit;text-decoration:none;}
   .brand{font-size:11px;letter-spacing:.03em;}
   .nav-right{gap:14px;}
   .nav-right .icon-btn,.nav-cta{display:none;}
+  .search kbd{display:none;}
   .blog-head{padding:130px 0 40px;}
   .post-row a{grid-template-columns:1fr;gap:10px;padding:30px 2px;}
   .post-row a:hover{padding-left:2px;}
