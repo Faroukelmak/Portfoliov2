@@ -3,13 +3,16 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>PaddleOCR en production sur CPU : pourquoi je suis passé par ONNX Runtime · Farouk El Makhchoune</title>
+<title>PaddleOCR en production sur CPU, pourquoi je suis passé par ONNX Runtime · Farouk El Makhchoune</title>
 <meta name="description" content="Pas de GPU, des lots de 200+ PDF à contrôler et un PaddlePaddle qui plante au démarrage. Retour sur un choix d'architecture simple qui a débloqué tout le pipeline.">
 <link rel="canonical" href="https://faroukelmak.vercel.app/blog/paddleocr-onnx-cpu/">
+<link rel="alternate" hreflang="fr" href="https://faroukelmak.vercel.app/blog/paddleocr-onnx-cpu/">
+<link rel="alternate" hreflang="en" href="https://faroukelmak.vercel.app/en/blog/paddleocr-onnx-cpu/">
 <meta property="og:type" content="article">
-<meta property="og:title" content="PaddleOCR en production sur CPU : pourquoi je suis passé par ONNX Runtime · Farouk El Makhchoune">
+<meta property="og:title" content="PaddleOCR en production sur CPU, pourquoi je suis passé par ONNX Runtime · Farouk El Makhchoune">
 <meta property="og:description" content="Pas de GPU, des lots de 200+ PDF à contrôler et un PaddlePaddle qui plante au démarrage. Retour sur un choix d'architecture simple qui a débloqué tout le pipeline.">
 <meta property="og:url" content="https://faroukelmak.vercel.app/blog/paddleocr-onnx-cpu/">
+<meta property="og:locale" content="fr_FR">
 <meta property="og:site_name" content="Farouk El Makhchoune">
 <meta name="twitter:card" content="summary">
 <meta name="author" content="Farouk El Makhchoune">
@@ -21,7 +24,7 @@
 <meta property="article:tag" content="OCR">
 <meta property="article:tag" content="ONNX">
 <meta property="article:tag" content="Production">
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","headline":"PaddleOCR en production sur CPU : pourquoi je suis passé par ONNX Runtime","description":"Pas de GPU, des lots de 200+ PDF à contrôler et un PaddlePaddle qui plante au démarrage. Retour sur un choix d'architecture simple qui a débloqué tout le pipeline.","datePublished":"2026-11-24","author":{"@type":"Person","name":"Farouk El Makhchoune","url":"https://faroukelmak.vercel.app"},"mainEntityOfPage":"https://faroukelmak.vercel.app/blog/paddleocr-onnx-cpu/"}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","headline":"PaddleOCR en production sur CPU, pourquoi je suis passé par ONNX Runtime","description":"Pas de GPU, des lots de 200+ PDF à contrôler et un PaddlePaddle qui plante au démarrage. Retour sur un choix d'architecture simple qui a débloqué tout le pipeline.","inLanguage":"fr","datePublished":"2026-11-24","author":{"@type":"Person","name":"Farouk El Makhchoune","url":"https://faroukelmak.vercel.app"},"mainEntityOfPage":"https://faroukelmak.vercel.app/blog/paddleocr-onnx-cpu/"}</script>
 </head>
 <body>
 <div class="progress" id="progress"></div>
@@ -31,6 +34,10 @@
   <div class="nav-right">
     <a class="nav-link" href="/">Portfolio</a>
     <a class="nav-link" href="/blog/" aria-current="page">Blog</a>
+    <div class="lang-switch" role="group" aria-label="Language">
+      <span class="thumb"></span>
+      <a href="/blog/paddleocr-onnx-cpu/" hreflang="fr" class="active" aria-current="true">FR</a><a href="/en/blog/paddleocr-onnx-cpu/" hreflang="en">EN</a>
+    </div>
     <a class="icon-btn" href="https://www.linkedin.com/in/farouk-el-makhchoune-6753b1248/" target="_blank" rel="noopener" aria-label="LinkedIn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/><path d="M10 9v12"/><path d="M10 13a4 4 0 018 0v8"/></svg></a>
     <a class="icon-btn" href="https://github.com/Faroukelmak" target="_blank" rel="noopener" aria-label="GitHub"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.9a3.4 3.4 0 00-.9-2.6c3-.3 6.2-1.5 6.2-6.7A5.2 5.2 0 0019.9 5 4.9 4.9 0 0019.8.5S18.6.1 16 1.9a13.4 13.4 0 00-7 0C6.4.1 5.2.5 5.2.5A4.9 4.9 0 005.1 5a5.2 5.2 0 00-1.4 3.6c0 5.2 3.2 6.4 6.2 6.7a3.4 3.4 0 00-.9 2.6V22"/></svg></a>
     <a class="nav-cta" href="/#contact">Me contacter</a>
@@ -40,55 +47,55 @@
   <article class="article">
     <a class="back rise" href="/blog/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 18l-6-6 6-6"/></svg>Tous les articles</a>
     <div class="tags rise" style="animation-delay:.05s"><span class="tag">OCR</span><span class="tag">ONNX</span><span class="tag">Production</span></div>
-    <h1 class="rise" style="animation-delay:.1s">PaddleOCR en production sur CPU : pourquoi je suis passé par ONNX Runtime</h1>
+    <h1 class="rise" style="animation-delay:.1s">PaddleOCR en production sur CPU, pourquoi je suis passé par ONNX Runtime</h1>
     <p class="lead rise" style="animation-delay:.16s">Pas de GPU, des lots de 200+ PDF à contrôler et un PaddlePaddle qui plante au démarrage. Retour sur un choix d'architecture simple qui a débloqué tout le pipeline.</p>
     <div class="byline rise" style="animation-delay:.22s">
       <span class="avatar">FE</span>
       <div><div class="who">Farouk El Makhchoune</div><div class="meta"><time datetime="2026-11-24">24 nov. 2026</time><span class="sep">·</span>2 min de lecture</div></div>
     </div>
     <div class="prose rise" style="animation-delay:.28s">
-<p>Chez Docaposte, j&#39;ai construit une plateforme qui compare des lots de PDF de production <strong>avant et après traitement</strong> : un tampon ajouté, une conversion de format, et parfois un mot qui disparaît ou un caractère qui se corrompt. Le contrôle se faisait à l&#39;œil, sur une dizaine de paires. Il fallait passer à <strong>200+ PDF par lot</strong>, automatiquement.</p>
+<p>Chez Docaposte, j&#39;ai construit une plateforme qui compare des lots de PDF de production <strong>avant et après traitement</strong>. Un tampon ajouté, une conversion de format, et parfois un mot qui disparaît ou un caractère qui se corrompt. Le contrôle se faisait à l&#39;œil, sur une dizaine de paires. Il fallait passer à <strong>200+ PDF par lot</strong>, automatiquement.</p>
 <p>Une partie de ces documents sont des scans. Il faut donc de l&#39;OCR, et c&#39;est là que les ennuis ont commencé.</p>
-<h2 id="le-contexte-cpu-uniquement">Le contexte : CPU uniquement</h2>
-<p>La plateforme tourne sur des postes et des serveurs <strong>sans GPU</strong>. Pas de CUDA, pas de cluster : l&#39;OCR doit tenir sur CPU, dans un temps raisonnable, avec des dépendances que l&#39;équipe peut installer sans y passer la journée.</p>
-<p>PaddleOCR coche beaucoup de cases sur le papier : bons modèles de détection et de reconnaissance, légers, multilingues. Sauf qu&#39;en pratique, le framework natif <strong>PaddlePaddle plantait sur notre combinaison Windows + CPU + Python 3.13</strong>. Pas une erreur explicite qu&#39;on corrige en dix minutes : un crash au chargement.</p>
-<h2 id="la-solution-garder-les-modeles-changer-le-moteur">La solution : garder les modèles, changer le moteur</h2>
-<p>Les modèles PaddleOCR existent en version <strong>ONNX</strong>. L&#39;idée est donc simple :</p>
+<h2 id="un-contexte-cpu-uniquement">Un contexte CPU uniquement</h2>
+<p>La plateforme tourne sur des postes et des serveurs <strong>sans GPU</strong>. Pas de CUDA, pas de cluster. L&#39;OCR doit tenir sur CPU, dans un temps raisonnable, avec des dépendances que l&#39;équipe peut installer sans y passer la journée.</p>
+<p>Sur le papier, PaddleOCR coche beaucoup de cases, avec de bons modèles de détection et de reconnaissance, légers et multilingues. Sauf qu&#39;en pratique, le framework natif <strong>PaddlePaddle plantait sur notre combinaison Windows + CPU + Python 3.13</strong>. Pas une erreur explicite qu&#39;on corrige en dix minutes, mais un crash au chargement.</p>
+<h2 id="garder-les-modeles-changer-le-moteur">Garder les modèles, changer le moteur</h2>
+<p>Les modèles PaddleOCR existent en version <strong>ONNX</strong>. L&#39;idée est donc simple.</p>
 <ul>
-<li>garder les poids et le découpage détection → reconnaissance de PaddleOCR ;</li>
-<li>remplacer le moteur d&#39;inférence PaddlePaddle par <strong>ONNX Runtime</strong>, qui s&#39;installe avec un simple <code>pip install onnxruntime</code> et tourne partout.</li>
+<li>Garder les poids et le découpage détection → reconnaissance de PaddleOCR.</li>
+<li>Remplacer le moteur d&#39;inférence PaddlePaddle par <strong>ONNX Runtime</strong>, qui s&#39;installe avec un simple <code>pip install onnxruntime</code> et tourne partout.</li>
 </ul>
-<p>On perd un peu de confort (le pré et post-traitement sont à écrire soi-même), mais on gagne exactement ce qui comptait ici : <strong>un runtime stable, portable et léger</strong>.</p>
+<p>On perd un peu de confort, puisque le pré et post-traitement sont à écrire soi-même. Mais on gagne exactement ce qui comptait ici, <strong>un runtime stable, portable et léger</strong>.</p>
 <h2 id="ne-lancer-l-39-ocr-que-quand-c-39-est-necessaire">Ne lancer l&#39;OCR que quand c&#39;est nécessaire</h2>
 <p>Le deuxième gain ne vient pas d&#39;ONNX, mais du routage. La majorité des pages ont déjà une couche texte native. Les passer à l&#39;OCR serait lent et <em>moins</em> fiable que de lire le texte directement.</p>
-<p>Le pipeline choisit donc une stratégie <strong>par page</strong> :</p>
+<p>Le pipeline choisit donc une stratégie <strong>par page</strong>.</p>
 <ol>
-<li><strong>texte natif</strong> : extraction directe avec PyMuPDF, rapide et exacte ;</li>
-<li><strong>scan</strong> : rendu de la page en image, puis OCR via ONNX Runtime ;</li>
-<li><strong>mixte</strong> : les deux, puis fusion.</li>
+<li><strong>Texte natif.</strong> Extraction directe avec PyMuPDF, rapide et exacte.</li>
+<li><strong>Scan.</strong> Rendu de la page en image, puis OCR via ONNX Runtime.</li>
+<li><strong>Mixte.</strong> Les deux, puis fusion.</li>
 </ol>
-<p>Résultat : environ <strong>3 secondes par PDF</strong> en moyenne sur CPU, ce qui rend un lot complet contrôlable sans surveiller la barre de progression.</p>
+<p>Au final, environ <strong>3 secondes par PDF</strong> en moyenne sur CPU, ce qui rend un lot complet contrôlable sans surveiller la barre de progression.</p>
 <h2 id="ce-que-j-39-en-retiens">Ce que j&#39;en retiens</h2>
 <blockquote>
 <p>Le bon modèle ne sert à rien si le runtime ne tient pas dans l&#39;environnement cible.</p>
 </blockquote>
-<p>Avant de comparer des scores de précision, je vérifie maintenant trois choses : sur quel matériel le modèle va tourner, qui va l&#39;installer, et s&#39;il existe un export (ONNX, en général) qui découple le modèle de son framework d&#39;origine. Dans ce projet, c&#39;est cette question qui a débloqué tout le reste.</p>
+<p>Avant de comparer des scores de précision, je vérifie maintenant trois choses. Sur quel matériel le modèle va tourner, qui va l&#39;installer, et s&#39;il existe un export (ONNX, en général) qui découple le modèle de son framework d&#39;origine. Dans ce projet, c&#39;est cette question qui a débloqué tout le reste.</p>
 
     </div>
     
     <div class="share">
       <span>Partager</span>
       <a href="https://www.linkedin.com/sharing/share-offsite/?url=https%3A%2F%2Ffaroukelmak.vercel.app%2Fblog%2Fpaddleocr-onnx-cpu%2F" target="_blank" rel="noopener">LinkedIn</a>
-      <a href="https://x.com/intent/post?url=https%3A%2F%2Ffaroukelmak.vercel.app%2Fblog%2Fpaddleocr-onnx-cpu%2F&text=PaddleOCR%20en%20production%20sur%20CPU%20%3A%20pourquoi%20je%20suis%20pass%C3%A9%20par%20ONNX%20Runtime" target="_blank" rel="noopener">X</a>
+      <a href="https://x.com/intent/post?url=https%3A%2F%2Ffaroukelmak.vercel.app%2Fblog%2Fpaddleocr-onnx-cpu%2F&text=PaddleOCR%20en%20production%20sur%20CPU%2C%20pourquoi%20je%20suis%20pass%C3%A9%20par%20ONNX%20Runtime" target="_blank" rel="noopener">X</a>
       <button type="button" id="copy" data-url="https://faroukelmak.vercel.app/blog/paddleocr-onnx-cpu/">Copier le lien</button>
     </div>
     <nav class="pager" aria-label="Autres articles">
-      <a href="/blog/structured-output-pydantic/"><span class="meta">← Précédent</span><b>Structured output avec Pydantic : faire répondre un LLM en objets Python</b></a>
+      <a href="/blog/structured-output-pydantic/"><span class="meta">← Précédent</span><b>Faire répondre un LLM en objets Python avec Pydantic</b></a>
       <div></div>
     </nav>
     <aside class="cta-box">
       <h2>Vous recrutez un Ingénieur IA ?</h2>
-      <p>Je cherche mon premier CDI : agents, RAG, fine-tuning de modèles. Paris ou partout en France.</p>
+      <p>Je cherche mon premier CDI dans les agents, le RAG et le fine-tuning de modèles. Paris ou partout en France.</p>
       <a class="btn" href="/#contact">Me contacter</a>
     </aside>
   </article>
@@ -107,11 +114,11 @@
   function f(){var h=document.documentElement,max=h.scrollHeight-h.clientHeight;bar.style.transform='scaleX('+(max>0?h.scrollTop/max:0)+')';}
   window.addEventListener('scroll',f,{passive:true});f();
   var c=document.getElementById('copy');if(c)c.addEventListener('click',function(){
-    var done=function(){c.textContent='Lien copié';setTimeout(function(){c.textContent='Copier le lien';},1800);};
+    var done=function(){c.textContent="Lien copié";setTimeout(function(){c.textContent="Copier le lien";},1800);};
     if(navigator.clipboard)navigator.clipboard.writeText(c.dataset.url).then(done,function(){});});
   document.querySelectorAll('.copy-code').forEach(function(b){b.addEventListener('click',function(){
     var code=b.closest('figure').querySelector('code').innerText;
-    if(navigator.clipboard)navigator.clipboard.writeText(code).then(function(){b.textContent='Copié';setTimeout(function(){b.textContent='Copier';},1600);},function(){});});});})();
+    if(navigator.clipboard)navigator.clipboard.writeText(code).then(function(){b.textContent="Copié";setTimeout(function(){b.textContent="Copier";},1600);},function(){});});});})();
 </script>
 </body>
 </html>
