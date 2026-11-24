@@ -91,7 +91,7 @@ movie.year + <span class="hljs-number">1</span>  <span class="hljs-comment"># 20
   director  texte    The director of the movie
   rating    nombre   The rating of the movie, out of 10</code></pre></figure>
 <p>Le modèle renvoie les valeurs de chaque champ, puis Pydantic construit l&#39;objet <code>Movie</code>.</p>
-<p>À retenir : <strong>la docstring et les descriptions font partie du prompt</strong>. Le modèle les lit. Une description précise (« en millions de dollars », « note sur 10 ») change vraiment la réponse.</p>
+<p>À retenir : <strong>la docstring et les descriptions font partie du prompt</strong>. Le modèle les lit. Par exemple, la description de <code>rating</code> précise <code>out of 10</code> : sans elle, le modèle pourrait renvoyer une note sur 5 ou sur 100.</p>
 <h2 id="des-objets-dans-des-objets">Des objets dans des objets</h2>
 <p>Un film a plusieurs acteurs, et chaque acteur a un nom et un rôle. Plutôt que de tout mettre à plat, on décrit <strong>un acteur</strong> une seule fois, puis on dit au film : « tu as une <strong>liste</strong> d&#39;acteurs ».</p>
 <figure class="code"><figcaption><span>Python</span><button type="button" class="copy-code">Copier</button></figcaption><pre><code class="hljs"><span class="hljs-keyword">class</span> <span class="hljs-title class_">Actor</span>(<span class="hljs-title class_ inherited__">BaseModel</span>):

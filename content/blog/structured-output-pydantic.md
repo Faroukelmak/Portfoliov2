@@ -81,7 +81,7 @@ Outil "Movie" : A movie with its details.
 
 Le modèle renvoie les valeurs de chaque champ, puis Pydantic construit l'objet `Movie`.
 
-À retenir : **la docstring et les descriptions font partie du prompt**. Le modèle les lit. Une description précise (« en millions de dollars », « note sur 10 ») change vraiment la réponse.
+À retenir : **la docstring et les descriptions font partie du prompt**. Le modèle les lit. Par exemple, la description de `rating` précise `out of 10` : sans elle, le modèle pourrait renvoyer une note sur 5 ou sur 100.
 
 ## Des objets dans des objets
 
