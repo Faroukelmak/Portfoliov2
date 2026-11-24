@@ -16,6 +16,7 @@
  *   tags:    [OCR, ONNX, Production]
  *   slug:    mon-url                            (optional, defaults to the file name)
  *   draft:   true                               (optional, skipped when true)
+ *   versions: [pydantic 2.14.4, langchain 1.5.0] (optional, shown as a note at the end)
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -82,6 +83,7 @@ const posts = fs.readdirSync(SRC)
     return {
       ...meta,
       tags: Array.isArray(meta.tags) ? meta.tags : meta.tags ? [meta.tags] : [],
+      versions: Array.isArray(meta.versions) ? meta.versions : meta.versions ? [meta.versions] : [],
       slug: meta.slug || slugify(path.basename(f, '.md')),
       dateObj: new Date(meta.date + 'T00:00:00Z'),
       minutes: Math.max(1, Math.round(words / 220)),
@@ -219,6 +221,7 @@ ${nav()}
     <div class="prose rise" style="animation-delay:.28s">
 ${p.html}
     </div>
+    ${p.versions.length ? `<aside class="versions"><span class="versions-k">Versions utilisées dans cet article</span><ul>${p.versions.map((v) => `<li><code>${esc(v)}</code></li>`).join('')}</ul><p>Testé le ${fmtDate(p.dateObj)}. Les API évoluent vite : vérifiez la version installée avec <code>pip show pydantic</code>.</p></aside>` : ''}
     <div class="share">
       <span>Partager</span>
       <a href="https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}" target="_blank" rel="noopener">LinkedIn</a>

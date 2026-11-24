@@ -16,5 +16,16 @@
     <category>ONNX</category>
     <category>Production</category>
   </item>
+  <item>
+    <title>Structured output avec Pydantic : faire répondre un LLM en objets Python</title>
+    <link>https://faroukelmak.vercel.app/blog/structured-output-pydantic/</link>
+    <guid>https://faroukelmak.vercel.app/blog/structured-output-pydantic/</guid>
+    <pubDate>Tue, 24 Nov 2026 00:00:00 GMT</pubDate>
+    <description>Un LLM répond en texte libre, votre code attend une donnée. Avec Pydantic et with_structured_output de LangChain, il renvoie un objet typé et validé. Ce que j'ai testé, et pourquoi Pydantic bat TypedDict et dataclass.</description>
+    <category>Python</category>
+    <category>Pydantic</category>
+    <category>LangChain</category>
+    <category>LLM</category>
+  </item>
 </channel>
 </rss>
