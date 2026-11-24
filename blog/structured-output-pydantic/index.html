@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Structured output avec Pydantic : faire répondre un LLM en objets Python · Farouk El Makhchoune</title>
+<meta name="description" content="Un LLM répond en texte libre, votre code attend une donnée. Avec Pydantic et with_structured_output de LangChain, il renvoie un objet typé et validé. Ce que j'ai testé, et pourquoi Pydantic bat TypedDict et dataclass.">
+<link rel="canonical" href="https://faroukelmak.vercel.app/blog/structured-output-pydantic/">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Structured output avec Pydantic : faire répondre un LLM en objets Python · Farouk El Makhchoune">
+<meta property="og:description" content="Un LLM répond en texte libre, votre code attend une donnée. Avec Pydantic et with_structured_output de LangChain, il renvoie un objet typé et validé. Ce que j'ai testé, et pourquoi Pydantic bat TypedDict et dataclass.">
+<meta property="og:url" content="https://faroukelmak.vercel.app/blog/structured-output-pydantic/">
+<meta property="og:site_name" content="Farouk El Makhchoune">
+<meta name="twitter:card" content="summary">
+<meta name="author" content="Farouk El Makhchoune">
+<link rel="alternate" type="application/rss+xml" title="Blog · Farouk El Makhchoune" href="/blog/feed.xml">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2048%2048%22%20width%3D%2248%22%20height%3D%2248%22%20role%3D%22img%22%20aria-label%3D%22Farouk%20El%20Makhchoune%22%3E%20%3Cdefs%3E%3ClinearGradient%20id%3D%22G%22%20x1%3D%220%22%20y1%3D%220%22%20x2%3D%221%22%20y2%3D%221%22%3E%20%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%23C9A9FF%22%2F%3E%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%236C8CF5%22%2F%3E%20%3C%2FlinearGradient%3E%20%3Cstyle%3E%20.ink%7Bfill%3Anone%3Bstroke%3Aurl%28%23G%29%3Bstroke-width%3A3%3Bstroke-linecap%3Around%3Bstroke-linejoin%3Around%3B%20%7D%20.dot%7Bfill%3A%23C9A9FF%3B%7D%20%7D%3C%2Fstyle%3E%20%3C%2Fdefs%3E%20%3Cpath%20class%3D%22ink%22%20d%3D%22M16%2040c-2-14%200-25%206-30%204-4%209-2%208%203-1%206-9%209-18%2010m14%204c-6%201-10%202-13%202%22%2F%3E%20%3Ccircle%20class%3D%22dot%22%20cx%3D%2235%22%20cy%3D%2236%22%20r%3D%222.4%22%2F%3E%20%3C%2Fsvg%3E">
+<link rel="preload" href="/assets/fonts/inter-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/assets/css/blog.css">
+<meta property="article:published_time" content="2026-11-24">
+<meta property="article:tag" content="Python">
+<meta property="article:tag" content="Pydantic">
+<meta property="article:tag" content="LangChain">
+<meta property="article:tag" content="LLM">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","headline":"Structured output avec Pydantic : faire répondre un LLM en objets Python","description":"Un LLM répond en texte libre, votre code attend une donnée. Avec Pydantic et with_structured_output de LangChain, il renvoie un objet typé et validé. Ce que j'ai testé, et pourquoi Pydantic bat TypedDict et dataclass.","datePublished":"2026-11-24","author":{"@type":"Person","name":"Farouk El Makhchoune","url":"https://faroukelmak.vercel.app"},"mainEntityOfPage":"https://faroukelmak.vercel.app/blog/structured-output-pydantic/"}</script>
+</head>
+<body>
+<div class="progress" id="progress"></div>
+
+<nav class="nav" id="nav">
+  <a class="brand" href="/">FAROUK EL MAKHCHOUNE</a>
+  <div class="nav-right">
+    <a class="nav-link" href="/">Portfolio</a>
+    <a class="nav-link" href="/blog/" aria-current="page">Blog</a>
+    <a class="icon-btn" href="https://www.linkedin.com/in/farouk-el-makhchoune-6753b1248/" target="_blank" rel="noopener" aria-label="LinkedIn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/><path d="M10 9v12"/><path d="M10 13a4 4 0 018 0v8"/></svg></a>
+    <a class="icon-btn" href="https://github.com/Faroukelmak" target="_blank" rel="noopener" aria-label="GitHub"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.9a3.4 3.4 0 00-.9-2.6c3-.3 6.2-1.5 6.2-6.7A5.2 5.2 0 0019.9 5 4.9 4.9 0 0019.8.5S18.6.1 16 1.9a13.4 13.4 0 00-7 0C6.4.1 5.2.5 5.2.5A4.9 4.9 0 005.1 5a5.2 5.2 0 00-1.4 3.6c0 5.2 3.2 6.4 6.2 6.7a3.4 3.4 0 00-.9 2.6V22"/></svg></a>
+    <a class="nav-cta" href="/#contact">Me contacter</a>
+  </div>
+</nav>
+<main>
+  <article class="article">
+    <a class="back rise" href="/blog/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 18l-6-6 6-6"/></svg>Tous les articles</a>
+    <div class="tags rise" style="animation-delay:.05s"><span class="tag">Python</span><span class="tag">Pydantic</span><span class="tag">LangChain</span><span class="tag">LLM</span></div>
+    <h1 class="rise" style="animation-delay:.1s">Structured output avec Pydantic : faire répondre un LLM en objets Python</h1>
+    <p class="lead rise" style="animation-delay:.16s">Un LLM répond en texte libre, votre code attend une donnée. Avec Pydantic et with_structured_output de LangChain, il renvoie un objet typé et validé. Ce que j'ai testé, et pourquoi Pydantic bat TypedDict et dataclass.</p>
+    <div class="byline rise" style="animation-delay:.22s">
+      <span class="avatar">FE</span>
+      <div><div class="who">Farouk El Makhchoune</div><div class="meta"><time datetime="2026-11-24">24 nov. 2026</time><span class="sep">·</span>4 min de lecture</div></div>
+    </div>
+    <div class="prose rise" style="animation-delay:.28s">
+<p>Demandez à un LLM « donne-moi les infos du film Inception » et vous obtenez un joli paragraphe en markdown : titre en gras, liste à puces, une phrase d&#39;intro. Parfait pour un humain, inutilisable pour du code. Pour insérer ces infos dans une base, les afficher dans une UI ou les passer à l&#39;étape suivante d&#39;un pipeline, il faut un <strong>objet</strong>, pas un texte.</p>
+<p>C&#39;est ce que fait le <em>structured output</em> : on impose un <strong>schéma</strong> au modèle, et on récupère une donnée qu&#39;on manipule directement en Python. Voici ce que j&#39;ai testé avec LangChain, et pourquoi j&#39;utilise Pydantic plutôt que les alternatives.</p>
+<h2 id="etape-1-decrire-la-donnee-avec-pydantic">Étape 1 : décrire la donnée avec Pydantic</h2>
+<p>On décrit ce qu&#39;on attend comme une classe Pydantic. Chaque champ a un type et une description :</p>
+<pre><code class="language-python">from langchain_groq import ChatGroq
+from pydantic import BaseModel, Field
+
+model = ChatGroq(model=&quot;openai/gpt-oss-20b&quot;)
+
+class Movie(BaseModel):
+    &quot;&quot;&quot;a movie with details&quot;&quot;&quot;
+    title: str    = Field(description=&quot;The title of the movie&quot;)
+    year: int     = Field(description=&quot;the year the movie was released&quot;)
+    director: str = Field(description=&quot;the director of the movie&quot;)
+    rating: float = Field(description=&quot;The movie&#39;s rating out of 10&quot;)
+</code></pre>
+<p>Puis on « branche » le schéma sur le modèle avec <code>with_structured_output</code> :</p>
+<pre><code class="language-python">model_with_structure = model.with_structured_output(Movie)
+r = model_with_structure.invoke(&quot;provide details about the movie Inception&quot;)
+
+r        # Movie(title=&#39;Inception&#39;, year=2010, director=&#39;Christopher Nolan&#39;, rating=8.8)
+r.title  # &#39;Inception&#39;
+r.year   # 2010  -&gt; un vrai int, pas la chaîne &quot;2010&quot;
+</code></pre>
+<p>Sans le schéma, <code>model.invoke(...)</code> renvoyait un long texte markdown dans <code>.content</code>. Avec, il n&#39;y a plus de <code>.content</code> : on récupère directement un objet <code>Movie</code>, avec l&#39;autocomplétion de l&#39;éditeur en prime.</p>
+<h2 id="ce-qui-se-passe-sous-le-capot">Ce qui se passe sous le capot</h2>
+<p>Pour comprendre le mécanisme, <code>include_raw=True</code> renvoie aussi la réponse brute du modèle :</p>
+<pre><code class="language-python">model.with_structured_output(Movie, include_raw=True).invoke(
+    &quot;provide details about the movie Inception&quot;
+)
+# {&#39;raw&#39;:    AIMessage(content=&#39;&#39;, tool_calls=[{&#39;name&#39;: &#39;Movie&#39;, &#39;args&#39;: {...}}]),
+#  &#39;parsed&#39;: Movie(title=&#39;Inception&#39;, year=2010, ...),
+#  &#39;parsing_error&#39;: None}
+</code></pre>
+<p>Le message brut n&#39;a <strong>pas de texte</strong> : il contient un appel d&#39;outil nommé <code>Movie</code>. LangChain a transformé la classe en <strong>définition d&#39;outil</strong> (un JSON Schema), et le modèle « appelle » cet outil avec les champs comme arguments. Pydantic parse ensuite ces arguments pour construire l&#39;objet.</p>
+<p>On peut voir exactement ce qui est envoyé au modèle :</p>
+<pre><code class="language-python">from langchain_core.utils.function_calling import convert_to_openai_tool
+convert_to_openai_tool(Movie)
+</code></pre>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;function&quot;,
+  &quot;function&quot;: {
+    &quot;name&quot;: &quot;Movie&quot;,
+    &quot;description&quot;: &quot;a movie with details&quot;,
+    &quot;parameters&quot;: {
+      &quot;properties&quot;: {
+        &quot;title&quot;: {&quot;description&quot;: &quot;The title of the movie&quot;, &quot;type&quot;: &quot;string&quot;},
+        &quot;year&quot;:  {&quot;description&quot;: &quot;the year the movie was released&quot;, &quot;type&quot;: &quot;integer&quot;}
+      },
+      &quot;required&quot;: [&quot;title&quot;, &quot;year&quot;],
+      &quot;type&quot;: &quot;object&quot;
+    }
+  }
+}
+</code></pre>
+<p>Deux conséquences pratiques :</p>
+<ul>
+<li><strong>La docstring et les <code>description</code> font partie du prompt.</strong> Le modèle les lit. Une description précise (« en millions de dollars », « note sur 10 ») change réellement la réponse.</li>
+<li>Le nom de la classe devient le nom de l&#39;outil : autant qu&#39;il soit explicite.</li>
+</ul>
+<h2 id="des-structures-imbriquees">Des structures imbriquées</h2>
+<p>Un schéma peut contenir d&#39;autres schémas, des listes et des champs optionnels :</p>
+<pre><code class="language-python">class Actor(BaseModel):
+    name: str
+    role: str
+
+class MovieDetails(BaseModel):
+    title: str
+    year: int
+    cast: list[Actor]          # une liste d&#39;objets
+    genres: list[str]
+    budget: float | None = Field(None, description=&quot;Budget in million USD&quot;)  # optionnel
+
+model.with_structured_output(MovieDetails).invoke(&quot;provide details about the movie Inception&quot;)
+# MovieDetails(title=&#39;Inception&#39;, year=2010,
+#   cast=[Actor(name=&#39;Leonardo DiCaprio&#39;, role=&#39;Dom Cobb&#39;),
+#         Actor(name=&#39;Joseph Gordon-Levitt&#39;, role=&#39;Arthur&#39;), ...], ...)
+</code></pre>
+<p>Chaque acteur est un vrai objet <code>Actor</code> : <code>r.cast[0].name</code> fonctionne directement.</p>
+<h2 id="les-alternatives-typeddict-et-dataclass">Les alternatives : TypedDict et dataclass</h2>
+<p>LangChain accepte aussi un <code>TypedDict</code> ou une <code>dataclass</code> comme schéma.</p>
+<p><strong>TypedDict</strong> renvoie un simple dictionnaire. Les descriptions passent par <code>Annotated</code> :</p>
+<pre><code class="language-python">from typing_extensions import TypedDict, Annotated
+
+class MovieDict(TypedDict):
+    &quot;&quot;&quot;a movie with details&quot;&quot;&quot;
+    title: Annotated[str, ..., &quot;The title of the movie&quot;]
+    year:  Annotated[int, ..., &quot;the year the movie was released&quot;]
+    #               type  requis  description
+
+model.with_structured_output(MovieDict).invoke(&quot;provide details about the movie Inception&quot;)
+# {&#39;title&#39;: &#39;Inception&#39;, &#39;year&#39;: 2010, ...}
+</code></pre>
+<p>Piège rencontré en testant : j&#39;avais écrit <code>budget: float | None = Field(None, description=&quot;Budget in million USD&quot;)</code> dans un TypedDict. La description a été <strong>ignorée</strong>, et le modèle a renvoyé <code>160000000</code> au lieu de <code>160</code>. Dans un TypedDict, seule la syntaxe <code>Annotated[type, ..., &quot;description&quot;]</code> est prise en compte.</p>
+<p><strong>dataclass</strong> renvoie un objet, mais n&#39;a aucun moyen de décrire les champs (les commentaires Python ne sont pas envoyés au modèle).</p>
+<p>Les trois fonctionnent. La différence se joue ailleurs.</p>
+<h2 id="le-vrai-super-pouvoir-de-pydantic-la-validation">Le vrai super-pouvoir de Pydantic : la validation</h2>
+<p>Un <code>TypedDict</code> n&#39;est qu&#39;une indication de type : Python ne vérifie <strong>rien</strong> à l&#39;exécution.</p>
+<pre><code class="language-python">MovieDict(title=&quot;Inception&quot;, year=&quot;deux mille dix&quot;)
+# {&#39;title&#39;: &#39;Inception&#39;, &#39;year&#39;: &#39;deux mille dix&#39;}   -&gt; aucune erreur
+</code></pre>
+<p>Si le modèle renvoie une valeur farfelue, elle passe silencieusement dans votre code et casse plus loin, au pire endroit. Pydantic, lui, <strong>valide chaque champ</strong> au moment où l&#39;objet est construit.</p>
+<h3 id="1-conversion-automatique-quand-c-39-est-sans-ambiguite">1. Conversion automatique quand c&#39;est sans ambiguïté</h3>
+<pre><code class="language-python">Movie.model_validate({&quot;title&quot;: &quot;Inception&quot;, &quot;year&quot;: &quot;2010&quot;,
+                      &quot;director&quot;: &quot;Christopher Nolan&quot;, &quot;rating&quot;: &quot;8.8&quot;})
+# Movie(title=&#39;Inception&#39;, year=2010, director=&#39;Christopher Nolan&#39;, rating=8.8)
+</code></pre>
+<p><code>&quot;2010&quot;</code> devient <code>2010</code>, <code>&quot;8.8&quot;</code> devient <code>8.8</code>. Pratique avec des LLM qui mettent parfois des guillemets là où il n&#39;en faut pas.</p>
+<h3 id="2-contraintes-metier-dans-le-schema">2. Contraintes métier dans le schéma</h3>
+<p>On ajoute des bornes directement dans <code>Field</code> :</p>
+<pre><code class="language-python">class Movie(BaseModel):
+    &quot;&quot;&quot;a movie with details&quot;&quot;&quot;
+    title: str
+    year: int
+    director: str
+    rating: float = Field(ge=0, le=10, description=&quot;The movie&#39;s rating out of 10&quot;)
+</code></pre>
+<p>Et une donnée invalide est refusée avec un message précis :</p>
+<pre><code class="language-text">2 validation errors for Movie
+year
+  Input should be a valid integer, unable to parse string as an integer
+  [type=int_parsing, input_value=&#39;deux mille dix&#39;, input_type=str]
+rating
+  Input should be less than or equal to 10
+  [type=less_than_equal, input_value=88, input_type=int]
+</code></pre>
+<p>Bonus : <code>ge</code> et <code>le</code> apparaissent aussi dans le JSON Schema (<code>&quot;minimum&quot;: 0, &quot;maximum&quot;: 10</code>). Le modèle voit donc la contrainte <strong>avant</strong> de répondre, et Pydantic la vérifie <strong>après</strong>.</p>
+<h3 id="3-des-regles-sur-mesure-avec-field-validator">3. Des règles sur mesure avec <code>field_validator</code></h3>
+<p>Pour les règles qu&#39;un type ne suffit pas à exprimer, on écrit un validateur. Exemple sur l&#39;extraction de contacts que j&#39;ai testée dans un agent :</p>
+<pre><code class="language-python">from pydantic import BaseModel, Field, field_validator
+
+class ContactInfo(BaseModel):
+    &quot;&quot;&quot;contact information for a person&quot;&quot;&quot;
+    name: str  = Field(description=&quot;the name of the person&quot;)
+    email: str = Field(pattern=r&quot;^[\w.+-]+@[\w-]+\.[\w.]+$&quot;,
+                       description=&quot;the email address of the person&quot;)
+    phone: str = Field(description=&quot;the phone number, international format&quot;)
+
+    @field_validator(&quot;phone&quot;)
+    @classmethod
+    def normalize_phone(cls, v: str) -&gt; str:
+        v = v.replace(&quot; &quot;, &quot;&quot;).replace(&quot;.&quot;, &quot;&quot;)
+        if not v.startswith(&quot;+&quot;):
+            raise ValueError(&quot;phone must start with a country code, e.g. +33&quot;)
+        return v
+</code></pre>
+<pre><code class="language-python">ContactInfo(name=&quot;John Doe&quot;, email=&quot;John@example.com&quot;, phone=&quot;+33 6 42 75 98 75&quot;)
+# ContactInfo(name=&#39;John Doe&#39;, email=&#39;John@example.com&#39;, phone=&#39;+33642759875&#39;)
+
+ContactInfo(name=&quot;John Doe&quot;, email=&quot;john-at-example.com&quot;, phone=&quot;06 42 75 98 75&quot;)
+# 2 validation errors for ContactInfo
+# email  String should match pattern ...
+# phone  Value error, phone must start with a country code, e.g. +33
+</code></pre>
+<p>Le validateur fait deux choses à la fois : il <strong>nettoie</strong> (espaces et points retirés) et il <strong>refuse</strong> ce qui ne respecte pas la règle.</p>
+<h3 id="4-gerer-l-39-echec-proprement">4. Gérer l&#39;échec proprement</h3>
+<p>Côté LangChain, avec <code>include_raw=True</code>, une réponse qui ne passe pas la validation ne fait pas planter l&#39;appel : <code>parsed</code> vaut <code>None</code> et l&#39;erreur est dans <code>parsing_error</code>. On peut alors relancer, ou renvoyer l&#39;erreur au modèle pour qu&#39;il se corrige :</p>
+<pre><code class="language-python">out = model.with_structured_output(Movie, include_raw=True).invoke(prompt)
+
+if out[&quot;parsing_error&quot;]:
+    ...  # retry, log, ou renvoyer l&#39;erreur au modèle
+else:
+    movie = out[&quot;parsed&quot;]
+</code></pre>
+<h3 id="5-serialiser-en-une-ligne">5. Sérialiser en une ligne</h3>
+<p>L&#39;objet validé se convertit directement pour une API ou une base :</p>
+<pre><code class="language-python">movie.model_dump()       # {&#39;title&#39;: &#39;Inception&#39;, &#39;year&#39;: 2010, ...}
+movie.model_dump_json()  # &#39;{&quot;title&quot;:&quot;Inception&quot;,&quot;year&quot;:2010,...}&#39;
+</code></pre>
+<h2 id="dans-un-agent-response-format">Dans un agent : <code>response_format</code></h2>
+<p>Le même schéma fonctionne avec un agent LangChain. Il suffit de le passer en <code>response_format</code> :</p>
+<pre><code class="language-python">from langchain.agents import create_agent
+from langchain.chat_models import init_chat_model
+
+llm = init_chat_model(model=&quot;groq:openai/gpt-oss-20b&quot;)
+agent = create_agent(model=llm, response_format=ContactInfo)
+
+response = agent.invoke({&quot;messages&quot;: [{&quot;role&quot;: &quot;user&quot;,
+    &quot;content&quot;: &quot;Extract contact info from: John Doe, John@example.com +33 642759875&quot;}]})
+
+response[&quot;structured_response&quot;]
+# ContactInfo(name=&#39;John Doe&#39;, email=&#39;John@example.com&#39;, phone=&#39;+33642759875&#39;)
+</code></pre>
+<p>L&#39;agent peut appeler ses outils comme d&#39;habitude, et sa réponse finale arrive dans <code>structured_response</code>, validée par le schéma.</p>
+<h2 id="lequel-choisir">Lequel choisir ?</h2>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Pydantic</th>
+<th>TypedDict</th>
+<th>dataclass</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Validation à l&#39;exécution</td>
+<td>✅</td>
+<td>❌</td>
+<td>❌</td>
+</tr>
+<tr>
+<td>Description des champs</td>
+<td><code>Field(description=...)</code></td>
+<td><code>Annotated[..., &quot;desc&quot;]</code></td>
+<td>aucune</td>
+</tr>
+<tr>
+<td>Contraintes (<code>ge</code>, <code>le</code>, <code>pattern</code>…)</td>
+<td>✅</td>
+<td>❌</td>
+<td>❌</td>
+</tr>
+<tr>
+<td>Résultat</td>
+<td>objet, <code>r.title</code></td>
+<td>dict, <code>r[&quot;title&quot;]</code></td>
+<td>objet, <code>r.title</code></td>
+</tr>
+<tr>
+<td>Sérialisation JSON</td>
+<td><code>model_dump_json()</code></td>
+<td>à la main</td>
+<td>à la main</td>
+</tr>
+</tbody></table>
+<p>Mon choix par défaut est <strong>Pydantic</strong> : le même schéma sert à guider le modèle (descriptions et contraintes dans le JSON Schema), à vérifier sa réponse (validation) et à la transmettre (sérialisation). Un TypedDict reste pratique pour un prototype rapide où un dict suffit, mais dès que la sortie d&#39;un LLM alimente du code, je veux qu&#39;elle soit vérifiée.</p>
+<blockquote>
+<p>Un LLM est une source de données non fiable. Pydantic, c&#39;est le contrôle à la frontière.</p>
+</blockquote>
+
+    </div>
+    <aside class="versions"><span class="versions-k">Versions utilisées dans cet article</span><ul><li><code>pydantic 2.14.4</code></li><li><code>langchain 1.5.0</code></li><li><code>langchain-core 1.8.1</code></li><li><code>langchain-groq 1.2.0</code></li><li><code>modèle : openai/gpt-oss-20b via Groq</code></li></ul><p>Testé le 24 nov. 2026. Les API évoluent vite : vérifiez la version installée avec <code>pip show pydantic</code>.</p></aside>
+    <div class="share">
+      <span>Partager</span>
+      <a href="https://www.linkedin.com/sharing/share-offsite/?url=https%3A%2F%2Ffaroukelmak.vercel.app%2Fblog%2Fstructured-output-pydantic%2F" target="_blank" rel="noopener">LinkedIn</a>
+      <a href="https://x.com/intent/post?url=https%3A%2F%2Ffaroukelmak.vercel.app%2Fblog%2Fstructured-output-pydantic%2F&text=Structured%20output%20avec%20Pydantic%20%3A%20faire%20r%C3%A9pondre%20un%20LLM%20en%20objets%20Python" target="_blank" rel="noopener">X</a>
+      <button type="button" id="copy" data-url="https://faroukelmak.vercel.app/blog/structured-output-pydantic/">Copier le lien</button>
+    </div>
+    <nav class="pager" aria-label="Autres articles">
+      <div></div>
+      <a class="next" href="/blog/paddleocr-onnx-cpu/"><span class="meta">Suivant →</span><b>PaddleOCR en production sur CPU : pourquoi je suis passé par ONNX Runtime</b></a>
+    </nav>
+    <aside class="cta-box">
+      <h2>Vous recrutez un Ingénieur IA ?</h2>
+      <p>Je cherche mon premier CDI : agents, RAG, fine-tuning de modèles. Paris ou partout en France.</p>
+      <a class="btn" href="/#contact">Me contacter</a>
+    </aside>
+  </article>
+</main>
+
+<div class="wrap"><footer class="foot">
+  <span>© 2026 Farouk El Makhchoune</span>
+  <span><a href="/">Portfolio</a> · <a href="https://www.linkedin.com/in/farouk-el-makhchoune-6753b1248/" target="_blank" rel="noopener">LinkedIn</a></span>
+</footer></div>
+<script>
+  (function(){var n=document.getElementById('nav');function f(){n.classList.toggle('scrolled',window.scrollY>24);}
+  window.addEventListener('scroll',f,{passive:true});f();})();
+</script>
+<script>
+  (function(){var bar=document.getElementById('progress');
+  function f(){var h=document.documentElement,max=h.scrollHeight-h.clientHeight;bar.style.transform='scaleX('+(max>0?h.scrollTop/max:0)+')';}
+  window.addEventListener('scroll',f,{passive:true});f();
+  var c=document.getElementById('copy');if(c)c.addEventListener('click',function(){
+    var done=function(){c.textContent='Lien copié';setTimeout(function(){c.textContent='Copier le lien';},1800);};
+    if(navigator.clipboard)navigator.clipboard.writeText(c.dataset.url).then(done,function(){});});})();
+</script>
+</body>
+</html>
