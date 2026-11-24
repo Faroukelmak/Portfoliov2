@@ -50,8 +50,8 @@
     <h1 class="rise" style="animation-delay:.1s">PaddleOCR in production on CPU, and why I went through ONNX Runtime</h1>
     <p class="lead rise" style="animation-delay:.16s">No GPU, batches of 200+ PDFs to check and a PaddlePaddle that crashes on startup. A simple architecture choice that unblocked the whole pipeline.</p>
     <div class="byline rise" style="animation-delay:.22s">
-      <span class="avatar">FE</span>
-      <div><div class="who">Farouk El Makhchoune</div><div class="meta"><time datetime="2026-11-24">24 Nov 2026</time><span class="sep">·</span>2 min read</div></div>
+      <a class="avatar" href="/" aria-label="Farouk El Makhchoune"><img src="/assets/blog/avatar.webp" alt="Farouk El Makhchoune" width="52" height="52"></a>
+      <div><a class="who" href="/">Farouk El Makhchoune</a><div class="meta"><time datetime="2026-11-24">24 Nov 2026</time><span class="sep">·</span>2 min read</div></div>
     </div>
     <div class="prose rise" style="animation-delay:.28s">
 <p>At Docaposte, I built a platform that compares batches of production PDFs <strong>before and after processing</strong>. A stamp gets added, a format gets converted, and sometimes a word disappears or a character gets corrupted. The check used to be done by eye, on about ten pairs. We needed to handle <strong>200+ PDFs per batch</strong>, automatically.</p>
