@@ -1,275 +1,346 @@
 ---
-title: Structured output avec Pydantic : faire répondre un LLM en objets Python
+title: Faire répondre un LLM en objets Python avec Pydantic
 date: 2026-11-24
-excerpt: Un LLM répond en texte libre, votre code attend une donnée. Avec Pydantic et with_structured_output de LangChain, il renvoie un objet typé et validé. Ce que j'ai testé, et pourquoi Pydantic bat TypedDict et dataclass.
+excerpt: Un LLM répond en texte libre alors que votre code attend une donnée. Avec Pydantic et with_structured_output de LangChain, il renvoie un objet typé et validé.
 tags: [Python, Pydantic, LangChain, LLM]
-versions: [pydantic 2.14.4, langchain 1.5.0, langchain-core 1.8.1, langchain-groq 1.2.0, "modèle : openai/gpt-oss-20b via Groq"]
+versions: [pydantic 2.14.4, langchain 1.5.0, langchain-core 1.8.1, langchain-groq 1.2.0]
+model: openai/gpt-oss-20b via Groq
 ---
 
-Demandez à un LLM « donne-moi les infos du film Inception » et vous obtenez un joli paragraphe en markdown : titre en gras, liste à puces, une phrase d'intro. Parfait pour un humain, inutilisable pour du code. Pour insérer ces infos dans une base, les afficher dans une UI ou les passer à l'étape suivante d'un pipeline, il faut un **objet**, pas un texte.
+Demandez à un LLM les infos d'un film et vous obtenez un joli paragraphe. Parfait pour un humain, inutilisable pour du code. Pour enregistrer ces infos en base, les afficher dans une interface ou les passer à l'étape suivante d'un pipeline, il faut une **donnée structurée**, pas un texte.
 
-C'est ce que fait le *structured output* : on impose un **schéma** au modèle, et on récupère une donnée qu'on manipule directement en Python. Voici ce que j'ai testé avec LangChain, et pourquoi j'utilise Pydantic plutôt que les alternatives.
+C'est le rôle du *structured output*. On impose un **schéma** au modèle et on récupère un objet Python prêt à l'emploi.
 
-## Étape 1 : décrire la donnée avec Pydantic
-
-On décrit ce qu'on attend comme une classe Pydantic. Chaque champ a un type et une description :
+## Le problème du texte libre
 
 ```python
 from langchain_groq import ChatGroq
-from pydantic import BaseModel, Field
 
 model = ChatGroq(model="openai/gpt-oss-20b")
+response = model.invoke("Give me the details of the movie Inception.")
+print(response.content)
+```
+
+```output
+**Inception** (2010) is a science-fiction film directed by
+**Christopher Nolan**. It has a rating of about 8.8/10 and
+follows a thief who steals secrets through dreams...
+```
+
+Pour récupérer l'année, il faudrait chercher « 2010 » dans le texte avec une regex. Et la phrase ne sera jamais formulée deux fois de la même façon.
+
+## Étape 1. Décrire la donnée avec Pydantic
+
+On écrit une classe qui décrit **exactement** ce qu'on attend. Chaque champ a un type et une description.
+
+```python
+from pydantic import BaseModel, Field
 
 class Movie(BaseModel):
-    """a movie with details"""
+    """A movie with its details."""
     title: str    = Field(description="The title of the movie")
-    year: int     = Field(description="the year the movie was released")
-    director: str = Field(description="the director of the movie")
-    rating: float = Field(description="The movie's rating out of 10")
+    year: int     = Field(description="The year the movie was released")
+    director: str = Field(description="The director of the movie")
+    rating: float = Field(description="The rating of the movie, out of 10")
 ```
 
-Puis on « branche » le schéma sur le modèle avec `with_structured_output` :
+## Étape 2. Brancher le schéma sur le modèle
 
 ```python
-model_with_structure = model.with_structured_output(Movie)
-r = model_with_structure.invoke("provide details about the movie Inception")
-
-r        # Movie(title='Inception', year=2010, director='Christopher Nolan', rating=8.8)
-r.title  # 'Inception'
-r.year   # 2010  -> un vrai int, pas la chaîne "2010"
+structured_model = model.with_structured_output(Movie)
+movie = structured_model.invoke("Give me the details of the movie Inception.")
+print(movie)
 ```
 
-Sans le schéma, `model.invoke(...)` renvoyait un long texte markdown dans `.content`. Avec, il n'y a plus de `.content` : on récupère directement un objet `Movie`, avec l'autocomplétion de l'éditeur en prime.
-
-## Ce qui se passe sous le capot
-
-Pour comprendre le mécanisme, `include_raw=True` renvoie aussi la réponse brute du modèle :
-
-```python
-model.with_structured_output(Movie, include_raw=True).invoke(
-    "provide details about the movie Inception"
+```output
+Movie(
+    title    = "Inception",
+    year     = 2010,
+    director = "Christopher Nolan",
+    rating   = 8.8
 )
-# {'raw':    AIMessage(content='', tool_calls=[{'name': 'Movie', 'args': {...}}]),
-#  'parsed': Movie(title='Inception', year=2010, ...),
-#  'parsing_error': None}
 ```
 
-Le message brut n'a **pas de texte** : il contient un appel d'outil nommé `Movie`. LangChain a transformé la classe en **définition d'outil** (un JSON Schema), et le modèle « appelle » cet outil avec les champs comme arguments. Pydantic parse ensuite ces arguments pour construire l'objet.
-
-On peut voir exactement ce qui est envoyé au modèle :
+Ce n'est plus du texte, c'est un objet `Movie`. On accède directement aux champs, avec les bons types.
 
 ```python
-from langchain_core.utils.function_calling import convert_to_openai_tool
-convert_to_openai_tool(Movie)
+movie.title     # "Inception"
+movie.year + 1  # 2011  -> year est un vrai entier
 ```
 
-```json
-{
-  "type": "function",
-  "function": {
-    "name": "Movie",
-    "description": "a movie with details",
-    "parameters": {
-      "properties": {
-        "title": {"description": "The title of the movie", "type": "string"},
-        "year":  {"description": "the year the movie was released", "type": "integer"}
-      },
-      "required": ["title", "year"],
-      "type": "object"
-    }
-  }
-}
+## Comment ça marche ?
+
+LangChain transforme la classe `Movie` en **outil** que le modèle doit remplir. Concrètement, le modèle reçoit quelque chose qui ressemble à ceci.
+
+```output Ce que le modèle reçoit
+Outil "Movie"   A movie with its details.
+  title     texte    The title of the movie
+  year      entier   The year the movie was released
+  director  texte    The director of the movie
+  rating    nombre   The rating of the movie, out of 10
 ```
 
-Deux conséquences pratiques :
+Le modèle renvoie une valeur pour chaque champ, puis Pydantic construit l'objet `Movie`.
 
-- **La docstring et les `description` font partie du prompt.** Le modèle les lit. Une description précise (« en millions de dollars », « note sur 10 ») change réellement la réponse.
-- Le nom de la classe devient le nom de l'outil : autant qu'il soit explicite.
+À retenir, **la docstring et les descriptions font partie du prompt**. Le modèle les lit. Par exemple, la description de `rating` précise `out of 10`. Sans elle, le modèle pourrait renvoyer une note sur 5 ou sur 100.
 
-## Des structures imbriquées
+## Des objets dans des objets
 
-Un schéma peut contenir d'autres schémas, des listes et des champs optionnels :
+Un film a plusieurs acteurs, et chaque acteur a un nom et un rôle. Plutôt que de tout mettre à plat, on décrit **un acteur** une seule fois, puis on indique que le film contient une **liste** d'acteurs.
 
 ```python
 class Actor(BaseModel):
-    name: str
-    role: str
+    name: str = Field(description="The name of the actor")
+    role: str = Field(description="The character played by the actor")
 
 class MovieDetails(BaseModel):
+    """A movie with its cast."""
     title: str
     year: int
-    cast: list[Actor]          # une liste d'objets
-    genres: list[str]
-    budget: float | None = Field(None, description="Budget in million USD")  # optionnel
+    genres: list[str]   # une liste de textes
+    cast: list[Actor]   # une liste d'acteurs
 
-model.with_structured_output(MovieDetails).invoke("provide details about the movie Inception")
-# MovieDetails(title='Inception', year=2010,
-#   cast=[Actor(name='Leonardo DiCaprio', role='Dom Cobb'),
-#         Actor(name='Joseph Gordon-Levitt', role='Arthur'), ...], ...)
+details = model.with_structured_output(MovieDetails).invoke(
+    "Give me the details of the movie Inception."
+)
 ```
 
-Chaque acteur est un vrai objet `Actor` : `r.cast[0].name` fonctionne directement.
+```output
+MovieDetails(
+    title  = "Inception",
+    year   = 2010,
+    genres = ["Science fiction", "Action", "Thriller"],
+    cast   = [
+        Actor(name="Leonardo DiCaprio",    role="Dom Cobb"),
+        Actor(name="Joseph Gordon-Levitt", role="Arthur"),
+        Actor(name="Elliot Page",          role="Ariadne"),
+    ]
+)
+```
 
-## Les alternatives : TypedDict et dataclass
+Chaque acteur est lui-même un objet, et on navigue dedans naturellement.
 
-LangChain accepte aussi un `TypedDict` ou une `dataclass` comme schéma.
+```python
+details.cast[0].name  # "Leonardo DiCaprio"
+len(details.cast)     # 3
+```
 
-**TypedDict** renvoie un simple dictionnaire. Les descriptions passent par `Annotated` :
+## Les alternatives TypedDict et dataclass
+
+LangChain accepte aussi deux autres façons de décrire le schéma.
+
+### Avec un TypedDict
 
 ```python
 from typing_extensions import TypedDict, Annotated
 
 class MovieDict(TypedDict):
-    """a movie with details"""
+    """A movie with its details."""
     title: Annotated[str, ..., "The title of the movie"]
-    year:  Annotated[int, ..., "the year the movie was released"]
-    #               type  requis  description
+    year: Annotated[int, ..., "The year the movie was released"]
 
-model.with_structured_output(MovieDict).invoke("provide details about the movie Inception")
-# {'title': 'Inception', 'year': 2010, ...}
+movie = model.with_structured_output(MovieDict).invoke(
+    "Give me the details of the movie Inception."
+)
 ```
 
-Piège rencontré en testant : j'avais écrit `budget: float | None = Field(None, description="Budget in million USD")` dans un TypedDict. La description a été **ignorée**, et le modèle a renvoyé `160000000` au lieu de `160`. Dans un TypedDict, seule la syntaxe `Annotated[type, ..., "description"]` est prise en compte.
+```output
+{"title": "Inception", "year": 2010}
+```
 
-**dataclass** renvoie un objet, mais n'a aucun moyen de décrire les champs (les commentaires Python ne sont pas envoyés au modèle).
+On récupère un **dictionnaire**, donc `movie["title"]` au lieu de `movie.title`.
 
-Les trois fonctionnent. La différence se joue ailleurs.
+### Avec une dataclass
 
-## Le vrai super-pouvoir de Pydantic : la validation
+```python
+from dataclasses import dataclass
+from langchain.agents import create_agent
 
-Un `TypedDict` n'est qu'une indication de type : Python ne vérifie **rien** à l'exécution.
+@dataclass
+class MovieData:
+    title: str
+    year: int
+
+agent = create_agent(model=model, response_format=MovieData)
+result = agent.invoke({"messages": "Give me the details of the movie Inception."})
+result["structured_response"]
+```
+
+```output
+MovieData(title="Inception", year=2010)
+```
+
+On récupère un **objet**, mais il n'existe aucun moyen de décrire les champs au modèle. Il ne voit que leurs noms et leurs types.
+
+### La différence avec Pydantic
+
+Les trois donnent une donnée structurée. Mais un TypedDict et une dataclass ne sont que des **étiquettes**, et Python ne vérifie rien quand la donnée arrive.
 
 ```python
 MovieDict(title="Inception", year="deux mille dix")
-# {'title': 'Inception', 'year': 'deux mille dix'}   -> aucune erreur
 ```
 
-Si le modèle renvoie une valeur farfelue, elle passe silencieusement dans votre code et casse plus loin, au pire endroit. Pydantic, lui, **valide chaque champ** au moment où l'objet est construit.
+```output
+{"title": "Inception", "year": "deux mille dix"}    <- accepté sans erreur
+```
 
-### 1. Conversion automatique quand c'est sans ambiguïté
+Si le modèle renvoie une valeur farfelue, elle entre silencieusement dans votre code et casse plus loin. Pydantic, lui, **contrôle chaque champ** à l'arrivée. C'est tout l'intérêt.
+
+## Le vrai atout de Pydantic, la validation
+
+### 1. Il convertit quand c'est évident
+
+Les LLM mettent parfois des guillemets en trop. Pydantic corrige ce qui est sans ambiguïté.
 
 ```python
-Movie.model_validate({"title": "Inception", "year": "2010",
-                      "director": "Christopher Nolan", "rating": "8.8"})
-# Movie(title='Inception', year=2010, director='Christopher Nolan', rating=8.8)
+Movie.model_validate({
+    "title": "Inception",
+    "year": "2010",      # texte
+    "director": "Christopher Nolan",
+    "rating": "8.8",     # texte
+})
 ```
 
-`"2010"` devient `2010`, `"8.8"` devient `8.8`. Pratique avec des LLM qui mettent parfois des guillemets là où il n'en faut pas.
+```output
+Movie(title="Inception", year=2010, director="Christopher Nolan", rating=8.8)
+                              ^ entier                             ^ nombre
+```
 
-### 2. Contraintes métier dans le schéma
+### 2. Il refuse ce qui est hors limites
 
-On ajoute des bornes directement dans `Field` :
+On ajoute des bornes directement dans le champ. Ici, une note doit être comprise entre 0 et 10.
 
 ```python
 class Movie(BaseModel):
-    """a movie with details"""
+    """A movie with its details."""
     title: str
     year: int
-    director: str
-    rating: float = Field(ge=0, le=10, description="The movie's rating out of 10")
+    # ge = supérieur ou égal, le = inférieur ou égal
+    rating: float = Field(ge=0, le=10, description="Rating out of 10")
 ```
 
-Et une donnée invalide est refusée avec un message précis :
+Si le modèle renvoie une note de 88, l'objet est refusé.
 
-```text
-2 validation errors for Movie
-year
-  Input should be a valid integer, unable to parse string as an integer
-  [type=int_parsing, input_value='deux mille dix', input_type=str]
-rating
-  Input should be less than or equal to 10
-  [type=less_than_equal, input_value=88, input_type=int]
+```output
+Erreur de validation sur Movie
+  rating   doit être inférieur ou égal à 10 (reçu 88)
 ```
 
-Bonus : `ge` et `le` apparaissent aussi dans le JSON Schema (`"minimum": 0, "maximum": 10`). Le modèle voit donc la contrainte **avant** de répondre, et Pydantic la vérifie **après**.
+Ces bornes sont aussi envoyées au modèle dans la description de l'outil. Il connaît la règle **avant** de répondre, et Pydantic la vérifie **après**.
 
-### 3. Des règles sur mesure avec `field_validator`
+### 3. Il applique vos propres règles avec `field_validator`
 
-Pour les règles qu'un type ne suffit pas à exprimer, on écrit un validateur. Exemple sur l'extraction de contacts que j'ai testée dans un agent :
+**Le besoin.** On extrait des contacts, et le modèle peut écrire un même numéro de plusieurs façons, comme `+33 6 42 75 98 75` ou `+33.6.42.75.98.75`. On veut toujours le même format (`+33642759875`) et refuser un numéro sans indicatif pays.
+
+**Étape A, le schéma**, comme d'habitude.
 
 ```python
 from pydantic import BaseModel, Field, field_validator
 
 class ContactInfo(BaseModel):
-    """contact information for a person"""
-    name: str  = Field(description="the name of the person")
-    email: str = Field(pattern=r"^[\w.+-]+@[\w-]+\.[\w.]+$",
-                       description="the email address of the person")
-    phone: str = Field(description="the phone number, international format")
+    """Contact information for a person."""
+    name: str  = Field(description="The full name of the person")
+    email: str = Field(description="The email address of the person")
+    phone: str = Field(description="The phone number, in international format")
+```
 
-    @field_validator("phone")
+**Étape B, la règle.** On ajoute une méthode **dans la même classe**, précédée du décorateur `@field_validator("phone")`.
+
+```python
+class ContactInfo(BaseModel):
+    """Contact information for a person."""
+    name: str  = Field(description="The full name of the person")
+    email: str = Field(description="The email address of the person")
+    phone: str = Field(description="The phone number, in international format")
+
+    @field_validator("phone")          # la règle s'applique au champ phone
     @classmethod
-    def normalize_phone(cls, v: str) -> str:
-        v = v.replace(" ", "").replace(".", "")
-        if not v.startswith("+"):
-            raise ValueError("phone must start with a country code, e.g. +33")
-        return v
+    def normalize_phone(cls, value: str) -> str:
+        value = value.replace(" ", "").replace(".", "")   # 1. nettoie
+        if not value.startswith("+"):                     # 2. vérifie
+            raise ValueError("Missing country code (e.g. +33)")
+        return value                                      # 3. valeur gardée
 ```
 
-```python
-ContactInfo(name="John Doe", email="John@example.com", phone="+33 6 42 75 98 75")
-# ContactInfo(name='John Doe', email='John@example.com', phone='+33642759875')
+Le décorateur demande à Pydantic de passer `phone` dans cette fonction **chaque fois qu'un `ContactInfo` est créé**. On ne l'appelle jamais soi-même. Pydantic s'en charge, y compris quand l'objet est construit à partir de la réponse du LLM.
 
-ContactInfo(name="John Doe", email="john-at-example.com", phone="06 42 75 98 75")
-# 2 validation errors for ContactInfo
-# email  String should match pattern ...
-# phone  Value error, phone must start with a country code, e.g. +33
+**Étape C, ce qui se passe.**
+
+```python
+contact = model.with_structured_output(ContactInfo).invoke(
+    "Extract the contact details: John Doe, john@example.com, +33 6 42 75 98 75"
+)
 ```
 
-Le validateur fait deux choses à la fois : il **nettoie** (espaces et points retirés) et il **refuse** ce qui ne respecte pas la règle.
+```output
+Le modèle renvoie   phone = "+33 6 42 75 98 75"
+                       |
+                       v   normalize_phone() appelée automatiquement
+Objet final         phone = "+33642759875"
+```
 
-### 4. Gérer l'échec proprement
+Et si le numéro n'a pas d'indicatif (`06 42 75 98 75`), l'objet n'est **pas** créé.
 
-Côté LangChain, avec `include_raw=True`, une réponse qui ne passe pas la validation ne fait pas planter l'appel : `parsed` vaut `None` et l'erreur est dans `parsing_error`. On peut alors relancer, ou renvoyer l'erreur au modèle pour qu'il se corrige :
+```output
+Erreur de validation sur ContactInfo
+  phone   Missing country code (e.g. +33)
+```
+
+### 4. Il gère l'échec proprement
+
+Avec `include_raw=True`, une réponse invalide ne fait pas planter l'appel. On récupère l'erreur et on décide quoi faire.
 
 ```python
-out = model.with_structured_output(Movie, include_raw=True).invoke(prompt)
+prompt = "Extract the contact details: John Doe, john@example.com, 06 42 75 98 75"
+out = model.with_structured_output(ContactInfo, include_raw=True).invoke(prompt)
 
 if out["parsing_error"]:
-    ...  # retry, log, ou renvoyer l'erreur au modèle
+    ...  # relancer, logger, ou renvoyer l'erreur au modèle
 else:
-    movie = out["parsed"]
+    contact = out["parsed"]
 ```
 
-### 5. Sérialiser en une ligne
-
-L'objet validé se convertit directement pour une API ou une base :
+### 5. Il exporte en une ligne
 
 ```python
-movie.model_dump()       # {'title': 'Inception', 'year': 2010, ...}
-movie.model_dump_json()  # '{"title":"Inception","year":2010,...}'
+contact.model_dump_json()
 ```
 
-## Dans un agent : `response_format`
+```output
+{"name": "John Doe", "email": "john@example.com", "phone": "+33642759875"}
+```
 
-Le même schéma fonctionne avec un agent LangChain. Il suffit de le passer en `response_format` :
+Le résultat est prêt à être renvoyé par une API ou enregistré en base.
+
+## Dans un agent avec `response_format`
+
+Le même schéma fonctionne avec un agent LangChain. L'agent utilise ses outils comme d'habitude, et sa réponse finale arrive validée.
 
 ```python
 from langchain.agents import create_agent
-from langchain.chat_models import init_chat_model
 
-llm = init_chat_model(model="groq:openai/gpt-oss-20b")
-agent = create_agent(model=llm, response_format=ContactInfo)
-
-response = agent.invoke({"messages": [{"role": "user",
-    "content": "Extract contact info from: John Doe, John@example.com +33 642759875"}]})
-
-response["structured_response"]
-# ContactInfo(name='John Doe', email='John@example.com', phone='+33642759875')
+agent = create_agent(model=model, response_format=ContactInfo)
+result = agent.invoke({
+    "messages": "Extract the contact details: John Doe, john@example.com, +33 6 42 75 98 75"
+})
+result["structured_response"]
 ```
 
-L'agent peut appeler ses outils comme d'habitude, et sa réponse finale arrive dans `structured_response`, validée par le schéma.
+```output
+ContactInfo(name="John Doe", email="john@example.com", phone="+33642759875")
+```
 
 ## Lequel choisir ?
 
 | | Pydantic | TypedDict | dataclass |
-|---|---|---|---|
-| Validation à l'exécution | ✅ | ❌ | ❌ |
-| Description des champs | `Field(description=...)` | `Annotated[..., "desc"]` | aucune |
-| Contraintes (`ge`, `le`, `pattern`…) | ✅ | ❌ | ❌ |
-| Résultat | objet, `r.title` | dict, `r["title"]` | objet, `r.title` |
-| Sérialisation JSON | `model_dump_json()` | à la main | à la main |
+|---|:---:|:---:|:---:|
+| Renvoie | un objet | un dictionnaire | un objet |
+| Décrire chaque champ au modèle | :yes: | :yes: | :no: |
+| Vérifier la réponse du modèle | :yes: | :no: | :no: |
+| Imposer des limites (min, max, format) | :yes: | :no: | :no: |
+| Nettoyer les valeurs avec ses propres règles | :yes: | :no: | :no: |
+| Exporter en JSON nativement | :yes: | :no: | :no: |
 
-Mon choix par défaut est **Pydantic** : le même schéma sert à guider le modèle (descriptions et contraintes dans le JSON Schema), à vérifier sa réponse (validation) et à la transmettre (sérialisation). Un TypedDict reste pratique pour un prototype rapide où un dict suffit, mais dès que la sortie d'un LLM alimente du code, je veux qu'elle soit vérifiée.
+Pydantic est mon choix par défaut, parce qu'**un seul schéma fait trois choses**. Il guide le modèle avec les descriptions et les limites, il vérifie sa réponse et il la transmet en JSON. Un TypedDict suffit pour un prototype rapide, mais dès que la sortie d'un LLM alimente du vrai code, je veux qu'elle soit contrôlée.
 
-> Un LLM est une source de données non fiable. Pydantic, c'est le contrôle à la frontière.
+> Un LLM est une source de données qu'on ne contrôle pas. Pydantic, c'est le contrôle à l'entrée.
