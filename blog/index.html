@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Blog · Farouk El Makhchoune</title>
+<meta name="description" content="Notes courtes sur l'IA en production : agents, RAG, fine-tuning, OCR et tout ce qui casse entre le notebook et la prod.">
+<link rel="canonical" href="https://faroukelmak.vercel.app/blog/">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Blog · Farouk El Makhchoune">
+<meta property="og:description" content="Notes courtes sur l'IA en production : agents, RAG, fine-tuning, OCR et tout ce qui casse entre le notebook et la prod.">
+<meta property="og:url" content="https://faroukelmak.vercel.app/blog/">
+<meta property="og:site_name" content="Farouk El Makhchoune">
+<meta name="twitter:card" content="summary">
+<meta name="author" content="Farouk El Makhchoune">
+<link rel="alternate" type="application/rss+xml" title="Blog · Farouk El Makhchoune" href="/blog/feed.xml">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2048%2048%22%20width%3D%2248%22%20height%3D%2248%22%20role%3D%22img%22%20aria-label%3D%22Farouk%20El%20Makhchoune%22%3E%20%3Cdefs%3E%3ClinearGradient%20id%3D%22G%22%20x1%3D%220%22%20y1%3D%220%22%20x2%3D%221%22%20y2%3D%221%22%3E%20%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%23C9A9FF%22%2F%3E%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%236C8CF5%22%2F%3E%20%3C%2FlinearGradient%3E%20%3Cstyle%3E%20.ink%7Bfill%3Anone%3Bstroke%3Aurl%28%23G%29%3Bstroke-width%3A3%3Bstroke-linecap%3Around%3Bstroke-linejoin%3Around%3B%20%7D%20.dot%7Bfill%3A%23C9A9FF%3B%7D%20%7D%3C%2Fstyle%3E%20%3C%2Fdefs%3E%20%3Cpath%20class%3D%22ink%22%20d%3D%22M16%2040c-2-14%200-25%206-30%204-4%209-2%208%203-1%206-9%209-18%2010m14%204c-6%201-10%202-13%202%22%2F%3E%20%3Ccircle%20class%3D%22dot%22%20cx%3D%2235%22%20cy%3D%2236%22%20r%3D%222.4%22%2F%3E%20%3C%2Fsvg%3E">
+<link rel="preload" href="/assets/fonts/inter-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/assets/css/blog.css">
+</head>
+<body>
+
+<nav class="nav" id="nav">
+  <a class="brand" href="/">FAROUK EL MAKHCHOUNE</a>
+  <div class="nav-right">
+    <a class="nav-link" href="/">Portfolio</a>
+    <a class="nav-link" href="/blog/" aria-current="page">Blog</a>
+    <a class="icon-btn" href="https://www.linkedin.com/in/farouk-el-makhchoune-6753b1248/" target="_blank" rel="noopener" aria-label="LinkedIn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/><path d="M10 9v12"/><path d="M10 13a4 4 0 018 0v8"/></svg></a>
+    <a class="icon-btn" href="https://github.com/Faroukelmak" target="_blank" rel="noopener" aria-label="GitHub"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.9a3.4 3.4 0 00-.9-2.6c3-.3 6.2-1.5 6.2-6.7A5.2 5.2 0 0019.9 5 4.9 4.9 0 0019.8.5S18.6.1 16 1.9a13.4 13.4 0 00-7 0C6.4.1 5.2.5 5.2.5A4.9 4.9 0 005.1 5a5.2 5.2 0 00-1.4 3.6c0 5.2 3.2 6.4 6.2 6.7a3.4 3.4 0 00-.9 2.6V22"/></svg></a>
+    <a class="nav-cta" href="/#contact">Me contacter</a>
+  </div>
+</nav>
+<main class="wrap">
+  <header class="blog-head">
+    <span class="kicker rise">Blog</span>
+    <h1 class="rise" style="animation-delay:.08s">Notes rapides sur l'IA <em>en production.</em></h1>
+    <p class="rise" style="animation-delay:.16s">Un sujet à la fois, lisible en quelques minutes : agents, RAG, fine-tuning, OCR, et tout ce qui casse entre le notebook et la prod.</p>
+    <div class="filters rise" style="animation-delay:.24s" id="filters"><button class="on" data-t="">Tous</button><button data-t="OCR">OCR</button><button data-t="ONNX">ONNX</button><button data-t="Production">Production</button></div>
+  </header>
+  <ul class="posts rise" style="animation-delay:.3s">
+    <li class="post-row" data-tags="OCR|ONNX|Production"><a href="/blog/paddleocr-onnx-cpu/">
+      <span class="meta"><time datetime="2026-11-24">24 nov. 2026</time><span class="sep">·</span>2 min</span>
+      <div><h2>PaddleOCR en production sur CPU : pourquoi je suis passé par ONNX Runtime</h2><p>Pas de GPU, des lots de 200+ PDF à contrôler et un PaddlePaddle qui plante au démarrage. Retour sur un choix d'architecture simple qui a débloqué tout le pipeline.</p><div class="tags"><span class="tag">OCR</span><span class="tag">ONNX</span><span class="tag">Production</span></div></div>
+      <svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M9 7h8v8"/></svg>
+    </a></li>
+  </ul>
+</main>
+
+<div class="wrap"><footer class="foot">
+  <span>© 2026 Farouk El Makhchoune</span>
+  <span><a href="/">Portfolio</a> · <a href="/blog/feed.xml">RSS</a> · <a href="https://www.linkedin.com/in/farouk-el-makhchoune-6753b1248/" target="_blank" rel="noopener">LinkedIn</a></span>
+</footer></div>
+<script>
+  (function(){var n=document.getElementById('nav');function f(){n.classList.toggle('scrolled',window.scrollY>24);}
+  window.addEventListener('scroll',f,{passive:true});f();})();
+</script>
+<script>
+  (function(){var f=document.getElementById('filters');if(!f)return;
+  f.addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;
+    f.querySelectorAll('button').forEach(function(x){x.classList.toggle('on',x===b);});
+    var t=b.dataset.t;document.querySelectorAll('.post-row').forEach(function(r){
+      r.hidden=!!t&&r.dataset.tags.split('|').indexOf(t)<0;});});})();
+</script>
+</body>
+</html>
