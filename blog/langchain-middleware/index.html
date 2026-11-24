@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Les middlewares LangChain expliqués avec deux exemples concrets · Farouk El Makhchoune</title>
+<meta name="description" content="Un middleware s'insère dans la boucle d'un agent pour agir avant ou après une étape. Deux exemples pour comprendre le principe, le résumé automatique de l'historique et la validation humaine avant une action sensible.">
+<link rel="canonical" href="https://faroukelmak.vercel.app/blog/langchain-middleware/">
+<link rel="alternate" hreflang="fr" href="https://faroukelmak.vercel.app/blog/langchain-middleware/">
+<link rel="alternate" hreflang="en" href="https://faroukelmak.vercel.app/en/blog/langchain-middleware/">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Les middlewares LangChain expliqués avec deux exemples concrets · Farouk El Makhchoune">
+<meta property="og:description" content="Un middleware s'insère dans la boucle d'un agent pour agir avant ou après une étape. Deux exemples pour comprendre le principe, le résumé automatique de l'historique et la validation humaine avant une action sensible.">
+<meta property="og:url" content="https://faroukelmak.vercel.app/blog/langchain-middleware/">
+<meta property="og:locale" content="fr_FR">
+<meta property="og:site_name" content="Farouk El Makhchoune">
+<meta name="twitter:card" content="summary">
+<meta name="author" content="Farouk El Makhchoune">
+<link rel="alternate" type="application/rss+xml" title="Blog · Farouk El Makhchoune" href="/blog/feed.xml">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2048%2048%22%20width%3D%2248%22%20height%3D%2248%22%20role%3D%22img%22%20aria-label%3D%22Farouk%20El%20Makhchoune%22%3E%20%3Cdefs%3E%3ClinearGradient%20id%3D%22G%22%20x1%3D%220%22%20y1%3D%220%22%20x2%3D%221%22%20y2%3D%221%22%3E%20%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%23C9A9FF%22%2F%3E%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%236C8CF5%22%2F%3E%20%3C%2FlinearGradient%3E%20%3Cstyle%3E%20.ink%7Bfill%3Anone%3Bstroke%3Aurl%28%23G%29%3Bstroke-width%3A3%3Bstroke-linecap%3Around%3Bstroke-linejoin%3Around%3B%20%7D%20.dot%7Bfill%3A%23C9A9FF%3B%7D%20%7D%3C%2Fstyle%3E%20%3C%2Fdefs%3E%20%3Cpath%20class%3D%22ink%22%20d%3D%22M16%2040c-2-14%200-25%206-30%204-4%209-2%208%203-1%206-9%209-18%2010m14%204c-6%201-10%202-13%202%22%2F%3E%20%3Ccircle%20class%3D%22dot%22%20cx%3D%2235%22%20cy%3D%2236%22%20r%3D%222.4%22%2F%3E%20%3C%2Fsvg%3E">
+<link rel="preload" href="/assets/fonts/inter-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/assets/css/blog.css">
+<meta property="article:published_time" content="2026-11-24">
+<meta property="article:tag" content="LangChain">
+<meta property="article:tag" content="Agents">
+<meta property="article:tag" content="Middleware">
+<meta property="article:tag" content="Python">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","headline":"Les middlewares LangChain expliqués avec deux exemples concrets","description":"Un middleware s'insère dans la boucle d'un agent pour agir avant ou après une étape. Deux exemples pour comprendre le principe, le résumé automatique de l'historique et la validation humaine avant une action sensible.","inLanguage":"fr","datePublished":"2026-11-24","author":{"@type":"Person","name":"Farouk El Makhchoune","url":"https://faroukelmak.vercel.app"},"mainEntityOfPage":"https://faroukelmak.vercel.app/blog/langchain-middleware/"}</script>
+</head>
+<body>
+<div class="progress" id="progress"></div>
+
+<nav class="nav" id="nav">
+  <a class="brand" href="/">FAROUK EL MAKHCHOUNE</a>
+  <div class="nav-right">
+    <a class="nav-link" href="/">Portfolio</a>
+    <a class="nav-link" href="/blog/" aria-current="page">Blog</a>
+    <div class="lang-switch" role="group" aria-label="Language">
+      <span class="thumb"></span>
+      <a href="/blog/langchain-middleware/" hreflang="fr" class="active" aria-current="true">FR</a><a href="/en/blog/langchain-middleware/" hreflang="en">EN</a>
+    </div>
+    <a class="icon-btn" href="https://www.linkedin.com/in/farouk-el-makhchoune-6753b1248/" target="_blank" rel="noopener" aria-label="LinkedIn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/><path d="M10 9v12"/><path d="M10 13a4 4 0 018 0v8"/></svg></a>
+    <a class="icon-btn" href="https://github.com/Faroukelmak" target="_blank" rel="noopener" aria-label="GitHub"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.9a3.4 3.4 0 00-.9-2.6c3-.3 6.2-1.5 6.2-6.7A5.2 5.2 0 0019.9 5 4.9 4.9 0 0019.8.5S18.6.1 16 1.9a13.4 13.4 0 00-7 0C6.4.1 5.2.5 5.2.5A4.9 4.9 0 005.1 5a5.2 5.2 0 00-1.4 3.6c0 5.2 3.2 6.4 6.2 6.7a3.4 3.4 0 00-.9 2.6V22"/></svg></a>
+    <a class="nav-cta" href="/#contact">Me contacter</a>
+  </div>
+</nav>
+<main>
+  <article class="article">
+    <a class="back rise" href="/blog/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 18l-6-6 6-6"/></svg>Tous les articles</a>
+    <div class="tags rise" style="animation-delay:.05s"><span class="tag">LangChain</span><span class="tag">Agents</span><span class="tag">Middleware</span><span class="tag">Python</span></div>
+    <h1 class="rise" style="animation-delay:.1s">Les middlewares LangChain expliqués avec deux exemples concrets</h1>
+    <p class="lead rise" style="animation-delay:.16s">Un middleware s'insère dans la boucle d'un agent pour agir avant ou après une étape. Deux exemples pour comprendre le principe, le résumé automatique de l'historique et la validation humaine avant une action sensible.</p>
+    <div class="byline rise" style="animation-delay:.22s">
+      <a class="avatar" href="/" aria-label="Farouk El Makhchoune"><img src="/assets/blog/avatar.webp" alt="Farouk El Makhchoune" width="48" height="48"></a>
+      <div><a class="who" href="/">Farouk El Makhchoune</a><div class="meta"><time datetime="2026-11-24">24 nov. 2026</time><span class="sep">·</span>4 min de lecture</div></div>
+    </div>
+    <div class="prose rise" style="animation-delay:.28s">
+<p>Un agent LangChain tourne en boucle. Il reçoit un message, appelle le modèle, le modèle demande parfois un outil, l&#39;outil renvoie un résultat au modèle, et ainsi de suite jusqu&#39;à la réponse finale.</p>
+<p>Un <strong>middleware</strong> est un bout de code qui s&#39;exécute <strong>à un moment précis de cette boucle</strong>, sans toucher au reste de l&#39;agent. On s&#39;en sert pour journaliser, réessayer en cas d&#39;erreur, limiter les appels, filtrer des données sensibles… ou, comme ici, pour résumer l&#39;historique et demander l&#39;accord d&#39;un humain.</p>
+<h2 id="ou-se-branche-un-middleware">Où se branche un middleware</h2>
+<p>Chaque middleware s&#39;accroche à un point de la boucle. Les deux qu&#39;on va voir agissent à deux endroits différents.</p>
+<figure class="viz-fig">
+<div class="viz" data-viz="agent-loop"></div>
+<figcaption>Le résumé intervient avant l'appel au modèle, la validation humaine juste après, avant que l'outil ne s'exécute.</figcaption>
+</figure>
+
+<ul>
+<li><code>before_model</code> s&#39;exécute <strong>avant</strong> chaque appel au modèle. C&#39;est là que le résumé raccourcit l&#39;historique.</li>
+<li><code>after_model</code> s&#39;exécute <strong>après</strong> la réponse du modèle. C&#39;est là que la validation humaine intercepte un appel d&#39;outil avant qu&#39;il parte.</li>
+</ul>
+<h2 id="la-mise-en-place-commune">La mise en place commune</h2>
+<p>Les deux middlewares ont besoin que l&#39;agent <strong>se souvienne</strong> de la conversation d&#39;un appel à l&#39;autre. Pour ça, on lui donne un <em>checkpointer</em> (une mémoire) et on identifie chaque conversation par un <code>thread_id</code>.</p>
+<figure class="code"><figcaption><span>Python</span><button type="button" class="copy-code">Copier</button></figcaption><pre><code class="hljs"><span class="hljs-keyword">from</span> langchain.agents <span class="hljs-keyword">import</span> create_agent
+<span class="hljs-keyword">from</span> langchain.chat_models <span class="hljs-keyword">import</span> init_chat_model
+<span class="hljs-keyword">from</span> langgraph.checkpoint.memory <span class="hljs-keyword">import</span> InMemorySaver
+<span class="hljs-keyword">from</span> langchain_core.messages <span class="hljs-keyword">import</span> HumanMessage
+
+llm = init_chat_model(<span class="hljs-string">&quot;groq:openai/gpt-oss-20b&quot;</span>)
+
+agent = create_agent(
+    model=llm,
+    tools=[...],
+    checkpointer=InMemorySaver(),   <span class="hljs-comment"># garde l&#x27;historique en mémoire</span>
+    middleware=[...],               <span class="hljs-comment"># une liste, on peut en empiler plusieurs</span>
+)
+
+config = {<span class="hljs-string">&quot;configurable&quot;</span>: {<span class="hljs-string">&quot;thread_id&quot;</span>: <span class="hljs-string">&quot;session-1&quot;</span>}}   <span class="hljs-comment"># même id = même conversation</span>
+agent.invoke({<span class="hljs-string">&quot;messages&quot;</span>: [HumanMessage(<span class="hljs-string">&quot;...&quot;</span>)]}, config)</code></pre></figure>
+<p>Sans checkpointer, chaque <code>invoke</code> repart de zéro. Avec <code>InMemorySaver()</code> et un <code>thread_id</code>, chaque appel s&#39;ajoute au même historique.</p>
+<h2 id="middleware-1-resumer-l-39-historique-automatiquement">Middleware 1. Résumer l&#39;historique automatiquement</h2>
+<h3 id="le-probleme">Le problème</h3>
+<p>Plus une conversation dure, plus l&#39;historique envoyé au modèle grossit. Chaque appel coûte plus de tokens, devient plus lent, et finit par dépasser la fenêtre de contexte du modèle.</p>
+<h3 id="l-39-idee">L&#39;idée</h3>
+<p>Quand l&#39;historique dépasse un seuil, on remplace les <strong>anciens</strong> messages par <strong>un seul résumé</strong>, et on garde les <strong>derniers</strong> messages tels quels. Le modèle conserve l&#39;essentiel du contexte avec beaucoup moins de texte.</p>
+<figure class="viz-fig">
+<div class="viz" data-viz="summarization"></div>
+<figcaption>Avec trigger 10 et keep 4. À la 6e question, l'historique dépasse 10 messages. Les 4 derniers sont gardés, le reste devient un résumé.</figcaption>
+</figure>
+
+<h3 id="le-code">Le code</h3>
+<figure class="code"><figcaption><span>Python</span><button type="button" class="copy-code">Copier</button></figcaption><pre><code class="hljs"><span class="hljs-keyword">from</span> langchain.agents.middleware <span class="hljs-keyword">import</span> SummarizationMiddleware
+
+agent = create_agent(
+    model=llm,
+    checkpointer=InMemorySaver(),
+    middleware=[
+        SummarizationMiddleware(
+            model=llm,                  <span class="hljs-comment"># le modèle qui écrit le résumé</span>
+            trigger=(<span class="hljs-string">&quot;messages&quot;</span>, <span class="hljs-number">10</span>),   <span class="hljs-comment"># quand résumer, dès 10 messages</span>
+            keep=(<span class="hljs-string">&quot;messages&quot;</span>, <span class="hljs-number">4</span>),       <span class="hljs-comment"># ce qui reste intact, les 4 derniers</span>
+        )
+    ],
+)</code></pre></figure>
+<p>Deux réglages suffisent à comprendre le comportement.</p>
+<ul>
+<li><code>trigger</code> dit <strong>quand</strong> résumer.</li>
+<li><code>keep</code> dit <strong>ce qu&#39;on ne touche pas</strong>.</li>
+</ul>
+<h3 id="ce-qui-se-passe-sur-six-questions">Ce qui se passe sur six questions</h3>
+<figure class="code"><figcaption><span>Python</span><button type="button" class="copy-code">Copier</button></figcaption><pre><code class="hljs">config = {<span class="hljs-string">&quot;configurable&quot;</span>: {<span class="hljs-string">&quot;thread_id&quot;</span>: <span class="hljs-string">&quot;math-session&quot;</span>}}
+
+questions = [
+    <span class="hljs-string">&quot;What is 2 + 2?&quot;</span>,
+    <span class="hljs-string">&quot;What is 10 x 3?&quot;</span>,
+    <span class="hljs-string">&quot;What is 100 / 4?&quot;</span>,
+    <span class="hljs-string">&quot;What is 7 squared?&quot;</span>,
+    <span class="hljs-string">&quot;What is 15% of 200?&quot;</span>,
+    <span class="hljs-string">&quot;What is the square root of 81?&quot;</span>,
+]
+
+<span class="hljs-keyword">for</span> i, question <span class="hljs-keyword">in</span> <span class="hljs-built_in">enumerate</span>(questions, start=<span class="hljs-number">1</span>):
+    result = agent.invoke({<span class="hljs-string">&quot;messages&quot;</span>: [HumanMessage(question)]}, config)
+    <span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;Question <span class="hljs-subst">{i}</span>&quot;</span>, <span class="hljs-built_in">len</span>(result[<span class="hljs-string">&quot;messages&quot;</span>]), <span class="hljs-string">&quot;messages&quot;</span>)</code></pre></figure>
+<figure class="code out"><figcaption>Résultat</figcaption><pre><code>Question 1    2 messages
+Question 2    4 messages
+Question 3    6 messages
+Question 4    8 messages
+Question 5   10 messages
+Question 6    6 messages   &lt;- résumé déclenché</code></pre></figure>
+<p>Chaque question ajoute 2 messages (la question et la réponse). À la 6e, l&#39;historique dépasse le seuil. Les anciens messages sont remplacés par un résumé, et l&#39;historique redescend à 6 messages.</p>
+<p>Le premier message de l&#39;historique est désormais ce résumé.</p>
+<figure class="code out"><figcaption>Premier message de l'historique</figcaption><pre><code>Here is a summary of the conversation to date:
+
+## SESSION INTENT
+The user is asking a series of math questions.
+
+## SUMMARY
+2 + 2 = 4, 10 x 3 = 30, 100 / 4 = 25, 7 squared = 49.</code></pre></figure>
+<h3 id="trois-facons-de-fixer-le-seuil">Trois façons de fixer le seuil</h3>
+<table>
+<thead>
+<tr>
+<th>Unité</th>
+<th>Exemple</th>
+<th>Signification</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>messages</code></td>
+<td><code>(&quot;messages&quot;, 10)</code></td>
+<td>dès 10 messages dans l&#39;historique</td>
+</tr>
+<tr>
+<td><code>tokens</code></td>
+<td><code>(&quot;tokens&quot;, 550)</code></td>
+<td>dès 550 tokens environ</td>
+</tr>
+<tr>
+<td><code>fraction</code></td>
+<td><code>(&quot;fraction&quot;, 0.005)</code></td>
+<td>dès 0,5 % de la fenêtre de contexte du modèle</td>
+</tr>
+</tbody></table>
+<p><code>keep</code> accepte les mêmes unités. Avec <code>fraction</code>, le calcul se fait sur la taille de contexte du modèle (131 072 tokens pour gpt-oss-20b, donc 0,5 % correspond à environ 650 tokens).</p>
+<p>Le résumé est une tâche secondaire. On peut passer un modèle <strong>moins cher</strong> dans <code>model=</code> que celui de l&#39;agent.</p>
+<h2 id="middleware-2-demander-l-39-accord-d-39-un-humain">Middleware 2. Demander l&#39;accord d&#39;un humain</h2>
+<h3 id="le-probleme">Le problème</h3>
+<p>Un agent qui peut envoyer des emails, écrire en base ou déclencher un paiement peut aussi se tromper. Pour ces actions, on veut qu&#39;un humain <strong>valide avant l&#39;exécution</strong>.</p>
+<h3 id="l-39-idee">L&#39;idée</h3>
+<p>Quand le modèle demande un outil sensible, le middleware <strong>met l&#39;agent en pause</strong>. Un humain regarde l&#39;appel prévu et décide de l&#39;<strong>approuver</strong>, de le <strong>modifier</strong> ou de le <strong>refuser</strong>. L&#39;agent reprend ensuite là où il s&#39;était arrêté.</p>
+<figure class="viz-fig">
+<div class="viz" data-viz="human-in-the-loop"></div>
+<figcaption>Les trois décisions possibles, approve, edit (ici le destinataire est corrigé) et reject.</figcaption>
+</figure>
+
+<h3 id="etape-a-les-outils-et-l-39-agent">Étape A. Les outils et l&#39;agent</h3>
+<p>Deux outils, un qui lit un email (sans risque) et un qui en envoie (sensible).</p>
+<figure class="code"><figcaption><span>Python</span><button type="button" class="copy-code">Copier</button></figcaption><pre><code class="hljs"><span class="hljs-keyword">from</span> langchain.tools <span class="hljs-keyword">import</span> tool
+<span class="hljs-keyword">from</span> langchain.agents.middleware <span class="hljs-keyword">import</span> HumanInTheLoopMiddleware
+
+<span class="hljs-meta">@tool</span>
+<span class="hljs-keyword">def</span> <span class="hljs-title function_">read_email</span>(<span class="hljs-params">email_id: <span class="hljs-built_in">str</span></span>) -&gt; <span class="hljs-built_in">str</span>:
+    <span class="hljs-string">&quot;&quot;&quot;Read an email by its id.&quot;&quot;&quot;</span>
+    <span class="hljs-keyword">return</span> <span class="hljs-string">f&quot;Email content for id <span class="hljs-subst">{email_id}</span>&quot;</span>
+
+<span class="hljs-meta">@tool</span>
+<span class="hljs-keyword">def</span> <span class="hljs-title function_">send_email</span>(<span class="hljs-params">recipient: <span class="hljs-built_in">str</span>, subject: <span class="hljs-built_in">str</span>, body: <span class="hljs-built_in">str</span></span>) -&gt; <span class="hljs-built_in">str</span>:
+    <span class="hljs-string">&quot;&quot;&quot;Send an email.&quot;&quot;&quot;</span>
+    <span class="hljs-keyword">return</span> <span class="hljs-string">f&quot;Email sent to <span class="hljs-subst">{recipient}</span> with subject &#x27;<span class="hljs-subst">{subject}</span>&#x27;&quot;</span>
+
+agent = create_agent(
+    model=llm,
+    tools=[read_email, send_email],
+    checkpointer=InMemorySaver(),
+    middleware=[
+        HumanInTheLoopMiddleware(interrupt_on={
+            <span class="hljs-string">&quot;send_email&quot;</span>: {<span class="hljs-string">&quot;allowed_decisions&quot;</span>: [<span class="hljs-string">&quot;approve&quot;</span>, <span class="hljs-string">&quot;edit&quot;</span>, <span class="hljs-string">&quot;reject&quot;</span>]},  <span class="hljs-comment"># pause</span>
+            <span class="hljs-string">&quot;read_email&quot;</span>: <span class="hljs-literal">False</span>,                                                <span class="hljs-comment"># jamais de pause</span>
+        })
+    ],
+)</code></pre></figure>
+<p><code>interrupt_on</code> liste les outils à surveiller. Pour <code>send_email</code>, on autorise les trois décisions. <code>read_email</code> s&#39;exécute librement.</p>
+<h3 id="etape-b-l-39-agent-s-39-arrete">Étape B. L&#39;agent s&#39;arrête</h3>
+<figure class="code"><figcaption><span>Python</span><button type="button" class="copy-code">Copier</button></figcaption><pre><code class="hljs">config = {<span class="hljs-string">&quot;configurable&quot;</span>: {<span class="hljs-string">&quot;thread_id&quot;</span>: <span class="hljs-string">&quot;email-session&quot;</span>}}
+
+result = agent.invoke(
+    {<span class="hljs-string">&quot;messages&quot;</span>: [HumanMessage(
+        <span class="hljs-string">&quot;Send an email to john@example.com with the subject &#x27;Hello&#x27; &quot;</span>
+        <span class="hljs-string">&quot;and the body &#x27;How are you?&#x27;&quot;</span>
+    )]},
+    config=config,
+)
+result[<span class="hljs-string">&quot;__interrupt__&quot;</span>]</code></pre></figure>
+<figure class="code out"><figcaption>Résultat</figcaption><pre><code>Pause sur send_email
+  recipient   john@example.com
+  subject     Hello
+  body        How are you?
+  décisions   approve, edit, reject</code></pre></figure>
+<p>L&#39;outil n&#39;a <strong>pas</strong> été exécuté. Le résultat contient <code>__interrupt__</code>, qui décrit l&#39;appel en attente.</p>
+<h3 id="etape-c-on-reprend-avec-une-decision">Étape C. On reprend avec une décision</h3>
+<p>On relance l&#39;agent avec <code>Command(resume=...)</code> et <strong>le même <code>config</code></strong>, pour qu&#39;il retrouve la conversation en pause.</p>
+<p><strong>Approuver</strong>, l&#39;outil s&#39;exécute tel quel.</p>
+<figure class="code"><figcaption><span>Python</span><button type="button" class="copy-code">Copier</button></figcaption><pre><code class="hljs"><span class="hljs-keyword">from</span> langgraph.types <span class="hljs-keyword">import</span> Command
+
+result = agent.invoke(
+    Command(resume={<span class="hljs-string">&quot;decisions&quot;</span>: [{<span class="hljs-string">&quot;type&quot;</span>: <span class="hljs-string">&quot;approve&quot;</span>}]}),
+    config=config,
+)
+<span class="hljs-built_in">print</span>(result[<span class="hljs-string">&quot;messages&quot;</span>][-<span class="hljs-number">1</span>].content)</code></pre></figure>
+<figure class="code out"><figcaption>Résultat</figcaption><pre><code>Email sent to john@example.com with the subject &quot;Hello&quot;.</code></pre></figure>
+<p><strong>Modifier</strong>, on corrige les arguments avant l&#39;exécution.</p>
+<figure class="code"><figcaption><span>Python</span><button type="button" class="copy-code">Copier</button></figcaption><pre><code class="hljs">Command(resume={<span class="hljs-string">&quot;decisions&quot;</span>: [{
+    <span class="hljs-string">&quot;type&quot;</span>: <span class="hljs-string">&quot;edit&quot;</span>,
+    <span class="hljs-string">&quot;edited_action&quot;</span>: {
+        <span class="hljs-string">&quot;name&quot;</span>: <span class="hljs-string">&quot;send_email&quot;</span>,
+        <span class="hljs-string">&quot;args&quot;</span>: {
+            <span class="hljs-string">&quot;recipient&quot;</span>: <span class="hljs-string">&quot;jane@example.com&quot;</span>,
+            <span class="hljs-string">&quot;subject&quot;</span>: <span class="hljs-string">&quot;Hello&quot;</span>,
+            <span class="hljs-string">&quot;body&quot;</span>: <span class="hljs-string">&quot;How are you?&quot;</span>,
+        },
+    },
+}]})</code></pre></figure>
+<figure class="code out"><figcaption>Résultat</figcaption><pre><code>Email sent to jane@example.com with the subject &quot;Hello&quot;.</code></pre></figure>
+<p><strong>Refuser</strong>, l&#39;outil ne s&#39;exécute pas et l&#39;agent en est informé.</p>
+<figure class="code"><figcaption><span>Python</span><button type="button" class="copy-code">Copier</button></figcaption><pre><code class="hljs">Command(resume={<span class="hljs-string">&quot;decisions&quot;</span>: [{<span class="hljs-string">&quot;type&quot;</span>: <span class="hljs-string">&quot;reject&quot;</span>}]})</code></pre></figure>
+<p>Deux règles à garder en tête.</p>
+<ul>
+<li>Toujours reprendre avec <strong>le même <code>thread_id</code></strong>, sinon l&#39;agent ne retrouve pas l&#39;appel en pause.</li>
+<li>Envoyer <strong>une décision par appel d&#39;outil en attente</strong>, dans l&#39;ordre.</li>
+</ul>
+<h2 id="les-deux-middlewares-cote-a-cote">Les deux middlewares côte à côte</h2>
+<table>
+<thead>
+<tr>
+<th></th>
+<th align="center">Résumé</th>
+<th align="center">Validation humaine</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Moment</td>
+<td align="center">avant l&#39;appel au modèle</td>
+<td align="center">après la réponse du modèle</td>
+</tr>
+<tr>
+<td>Modifie l&#39;historique</td>
+<td align="center"><span class="ic ic-yes" role="img" aria-label="oui"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span></td>
+<td align="center"><span class="ic ic-no" role="img" aria-label="non"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M7 7l10 10M17 7L7 17"/></svg></span></td>
+</tr>
+<tr>
+<td>Met l&#39;agent en pause</td>
+<td align="center"><span class="ic ic-no" role="img" aria-label="non"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M7 7l10 10M17 7L7 17"/></svg></span></td>
+<td align="center"><span class="ic ic-yes" role="img" aria-label="oui"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span></td>
+</tr>
+<tr>
+<td>Demande une action humaine</td>
+<td align="center"><span class="ic ic-no" role="img" aria-label="non"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M7 7l10 10M17 7L7 17"/></svg></span></td>
+<td align="center"><span class="ic ic-yes" role="img" aria-label="oui"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span></td>
+</tr>
+<tr>
+<td>Fait un appel LLM en plus</td>
+<td align="center"><span class="ic ic-yes" role="img" aria-label="oui"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span></td>
+<td align="center"><span class="ic ic-no" role="img" aria-label="non"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M7 7l10 10M17 7L7 17"/></svg></span></td>
+</tr>
+</tbody></table>
+<h2 id="et-les-autres-middlewares">Et les autres middlewares ?</h2>
+<p>LangChain en fournit d&#39;autres, prêts à l&#39;emploi, qui se branchent exactement de la même façon dans <code>middleware=[...]</code>. Par exemple, réessayer un appel au modèle ou à un outil qui échoue, basculer sur un modèle de secours, limiter le nombre d&#39;appels, détecter et masquer des données personnelles, ou ne présenter au modèle que les outils utiles.</p>
+<p>La liste complète et leurs paramètres sont dans la documentation officielle.</p>
+<ul>
+<li><a href="https://docs.langchain.com/oss/python/langchain/middleware/built-in" target="_blank" rel="noopener">Middlewares prêts à l&#39;emploi</a></li>
+<li><a href="https://docs.langchain.com/oss/python/langchain/middleware/overview" target="_blank" rel="noopener">Fonctionnement général des middlewares</a></li>
+</ul>
+<blockquote>
+<p>Un middleware ne change pas l&#39;agent, il change ce qui se passe autour de chaque étape.</p>
+</blockquote>
+
+    </div>
+    <aside class="env" aria-label="Environnement de test">
+      <div class="env-head"><span>Environnement de test</span><span>Testé le 24 nov. 2026</span></div>
+      <dl><div><dt>langchain</dt><dd>1.5.0</dd></div><div><dt>langchain-core</dt><dd>1.8.1</dd></div><div><dt>langchain-groq</dt><dd>1.2.0</dd></div><div><dt>langgraph</dt><dd>1.2.24</dd></div><div class="env-model"><dt>Modèle</dt><dd>openai/gpt-oss-20b via Groq</dd></div></dl>
+    </aside>
+    <div class="share">
+      <span>Partager</span>
+      <a href="https://www.linkedin.com/sharing/share-offsite/?url=https%3A%2F%2Ffaroukelmak.vercel.app%2Fblog%2Flangchain-middleware%2F" target="_blank" rel="noopener">LinkedIn</a>
+      <a href="https://x.com/intent/post?url=https%3A%2F%2Ffaroukelmak.vercel.app%2Fblog%2Flangchain-middleware%2F&text=Les%20middlewares%20LangChain%20expliqu%C3%A9s%20avec%20deux%20exemples%20concrets" target="_blank" rel="noopener">X</a>
+      <button type="button" id="copy" data-url="https://faroukelmak.vercel.app/blog/langchain-middleware/">Copier le lien</button>
+    </div>
+    <nav class="pager" aria-label="Autres articles">
+      <a href="/blog/structured-output-pydantic/"><span class="meta">← Précédent</span><b>Faire répondre un LLM en objets Python avec Pydantic</b></a>
+      <div></div>
+    </nav>
+    <aside class="cta-box">
+      <h2>Vous recrutez un Ingénieur IA ?</h2>
+      <p>Je cherche mon premier CDI dans les agents, le RAG et le fine-tuning de modèles. Paris ou partout en France.</p>
+      <a class="btn" href="/#contact">Me contacter</a>
+    </aside>
+  </article>
+</main>
+
+<div class="wrap"><footer class="foot">
+  <span>© 2026 Farouk El Makhchoune</span>
+  <span><a href="/">Portfolio</a> · <a href="https://www.linkedin.com/in/farouk-el-makhchoune-6753b1248/" target="_blank" rel="noopener">LinkedIn</a></span>
+</footer></div>
+<script>
+  (function(){var n=document.getElementById('nav');function f(){n.classList.toggle('scrolled',window.scrollY>24);}
+  window.addEventListener('scroll',f,{passive:true});f();})();
+</script>
+<script>
+  (function(){var bar=document.getElementById('progress');
+  function f(){var h=document.documentElement,max=h.scrollHeight-h.clientHeight;bar.style.transform='scaleX('+(max>0?h.scrollTop/max:0)+')';}
+  window.addEventListener('scroll',f,{passive:true});f();
+  var c=document.getElementById('copy');if(c)c.addEventListener('click',function(){
+    var done=function(){c.textContent="Lien copié";setTimeout(function(){c.textContent="Copier le lien";},1800);};
+    if(navigator.clipboard)navigator.clipboard.writeText(c.dataset.url).then(done,function(){});});
+  document.querySelectorAll('.copy-code').forEach(function(b){b.addEventListener('click',function(){
+    var code=b.closest('figure').querySelector('code').innerText;
+    if(navigator.clipboard)navigator.clipboard.writeText(code).then(function(){b.textContent="Copié";setTimeout(function(){b.textContent="Copier";},1600);},function(){});});});})();
+</script>
+<script src="/assets/js/blog-viz.js" defer></script>
+</body>
+</html>

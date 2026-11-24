@@ -7,6 +7,17 @@
   <description>Ideas, notes and discoveries.</description>
   <language>en</language>
   <item>
+    <title>LangChain middleware explained with two concrete examples</title>
+    <link>https://faroukelmak.vercel.app/en/blog/langchain-middleware/</link>
+    <guid>https://faroukelmak.vercel.app/en/blog/langchain-middleware/</guid>
+    <pubDate>Tue, 24 Nov 2026 00:00:00 GMT</pubDate>
+    <description>A middleware plugs into an agent's loop to act before or after a step. Two examples to understand the idea, automatic history summarization and human approval before a sensitive action.</description>
+    <category>LangChain</category>
+    <category>Agents</category>
+    <category>Middleware</category>
+    <category>Python</category>
+  </item>
+  <item>
     <title>Getting Python objects out of an LLM with Pydantic</title>
     <link>https://faroukelmak.vercel.app/en/blog/structured-output-pydantic/</link>
     <guid>https://faroukelmak.vercel.app/en/blog/structured-output-pydantic/</guid>
