@@ -21,7 +21,14 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { createRequire } from 'node:module';
 import { marked } from './vendor/marked.esm.js';
+
+const require = createRequire(import.meta.url);
+const hljs = require('./vendor/highlight/core.js');
+for (const l of ['python', 'json', 'bash', 'plaintext']) hljs.registerLanguage(l, require(`./vendor/highlight/languages/${l}.js`));
+hljs.registerAliases(['py'], { languageName: 'python' });
+hljs.registerAliases(['sh', 'shell'], { languageName: 'bash' });
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const SRC = path.join(ROOT, 'content/blog');
@@ -68,7 +75,23 @@ renderer.link = function ({ href, title, tokens }) {
   const ext = /^https?:\/\//.test(href) && !href.startsWith(SITE);
   return `<a href="${esc(href)}"${title ? ` title="${esc(title)}"` : ''}${ext ? ' target="_blank" rel="noopener"' : ''}>${text}</a>`;
 };
+/* code blocks: ```python -> highlighted panel, ```output [label] -> result panel */
+const LANG_LABEL = { python: 'Python', py: 'Python', json: 'JSON', bash: 'Terminal', sh: 'Terminal', shell: 'Terminal', text: 'Texte', txt: 'Texte' };
+renderer.code = function ({ text, lang = '' }) {
+  const [kind, ...rest] = lang.trim().split(/\s+/);
+  if (kind === 'output') {
+    return `<figure class="code out"><figcaption>${esc(rest.join(' ') || 'Résultat')}</figcaption><pre><code>${esc(text)}</code></pre></figure>\n`;
+  }
+  const known = kind && hljs.getLanguage(kind);
+  const body = known ? hljs.highlight(text, { language: kind }).value : esc(text);
+  return `<figure class="code"><figcaption><span>${esc(LANG_LABEL[kind] || kind || 'Code')}</span><button type="button" class="copy-code">Copier</button></figcaption><pre><code class="hljs">${body}</code></pre></figure>\n`;
+};
 marked.use({ renderer, gfm: true });
+
+/* :yes: / :no: tokens -> SVG icons (no emoji) */
+const ICON_YES = '<span class="ic ic-yes" role="img" aria-label="oui"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>';
+const ICON_NO = '<span class="ic ic-no" role="img" aria-label="non"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M7 7l10 10M17 7L7 17"/></svg></span>';
+const withIcons = (html) => html.replace(/:yes:/g, ICON_YES).replace(/:no:/g, ICON_NO);
 
 /* favicon is shared with the landing page */
 const indexHtml = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
@@ -87,7 +110,7 @@ const posts = fs.readdirSync(SRC)
       slug: meta.slug || slugify(path.basename(f, '.md')),
       dateObj: new Date(meta.date + 'T00:00:00Z'),
       minutes: Math.max(1, Math.round(words / 220)),
-      html: marked.parse(body),
+      html: withIcons(marked.parse(body)),
       text: body.replace(/```[\s\S]*?```/g, ' ').replace(/[#*_>`\[\]()!-]/g, ' ').replace(/\s+/g, ' ').trim(),
     };
   })
@@ -246,7 +269,10 @@ ${foot()}
   window.addEventListener('scroll',f,{passive:true});f();
   var c=document.getElementById('copy');if(c)c.addEventListener('click',function(){
     var done=function(){c.textContent='Lien copié';setTimeout(function(){c.textContent='Copier le lien';},1800);};
-    if(navigator.clipboard)navigator.clipboard.writeText(c.dataset.url).then(done,function(){});});})();
+    if(navigator.clipboard)navigator.clipboard.writeText(c.dataset.url).then(done,function(){});});
+  document.querySelectorAll('.copy-code').forEach(function(b){b.addEventListener('click',function(){
+    var code=b.closest('figure').querySelector('code').innerText;
+    if(navigator.clipboard)navigator.clipboard.writeText(code).then(function(){b.textContent='Copié';setTimeout(function(){b.textContent='Copier';},1600);},function(){});});});})();
 </script>
 </body>
 </html>

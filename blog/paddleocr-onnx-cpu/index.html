@@ -108,7 +108,10 @@
   window.addEventListener('scroll',f,{passive:true});f();
   var c=document.getElementById('copy');if(c)c.addEventListener('click',function(){
     var done=function(){c.textContent='Lien copié';setTimeout(function(){c.textContent='Copier le lien';},1800);};
-    if(navigator.clipboard)navigator.clipboard.writeText(c.dataset.url).then(done,function(){});});})();
+    if(navigator.clipboard)navigator.clipboard.writeText(c.dataset.url).then(done,function(){});});
+  document.querySelectorAll('.copy-code').forEach(function(b){b.addEventListener('click',function(){
+    var code=b.closest('figure').querySelector('code').innerText;
+    if(navigator.clipboard)navigator.clipboard.writeText(code).then(function(){b.textContent='Copié';setTimeout(function(){b.textContent='Copier';},1600);},function(){});});});})();
 </script>
 </body>
 </html>
