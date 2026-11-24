@@ -86,6 +86,7 @@ const posts = fs.readdirSync(SRC)
       dateObj: new Date(meta.date + 'T00:00:00Z'),
       minutes: Math.max(1, Math.round(words / 220)),
       html: marked.parse(body),
+      text: body.replace(/```[\s\S]*?```/g, ' ').replace(/[#*_>`\[\]()!-]/g, ' ').replace(/\s+/g, ' ').trim(),
     };
   })
   .filter((p) => !p.draft)
@@ -146,35 +147,46 @@ const foot = () => `
 const metaLine = (p) => `<time datetime="${p.date}">${fmtDate(p.dateObj)}</time><span class="sep">·</span>${p.minutes} min`;
 
 /* ---------------------------------------------------------------- listing */
-const allTags = [...new Set(posts.flatMap((p) => p.tags))].sort((a, b) => a.localeCompare(b, 'fr'));
 const listing = `${head({
   title: `Blog · ${AUTHOR}`,
-  description: "Notes courtes sur l'IA en production : agents, RAG, fine-tuning, OCR et tout ce qui casse entre le notebook et la prod.",
+  description: "Architectures de modèles, VLM, librairies Python, frameworks, LangChain, LangGraph : ce que je construis et décortique, un sujet à la fois.",
   url: `${SITE}/blog/`,
 })}
 ${nav()}
 <main class="wrap">
   <header class="blog-head">
     <span class="kicker rise">Blog</span>
-    <h1 class="rise" style="animation-delay:.08s">Notes rapides sur l'IA <em>en production.</em></h1>
-    <p class="rise" style="animation-delay:.16s">Un sujet à la fois, lisible en quelques minutes : agents, RAG, fine-tuning, OCR, et tout ce qui casse entre le notebook et la prod.</p>
-    ${allTags.length > 1 ? `<div class="filters rise" style="animation-delay:.24s" id="filters"><button class="on" data-t="">Tous</button>${allTags.map((t) => `<button data-t="${esc(t)}">${esc(t)}</button>`).join('')}</div>` : ''}
+    <h1 class="rise" style="animation-delay:.08s">Ce que je construis, <em>expliqué simplement.</em></h1>
+    <p class="rise" style="animation-delay:.16s">Architectures de modèles, VLM, librairies Python, frameworks, middlewares LangChain, LangGraph… Un sujet à la fois, en quelques minutes de lecture.</p>
+    <label class="search rise" style="animation-delay:.24s">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+      <input id="q" type="search" placeholder="Rechercher : Qwen, LangGraph, VLM…" autocomplete="off" aria-label="Rechercher dans le blog">
+      <kbd>/</kbd>
+    </label>
   </header>
-  ${posts.length ? `<ul class="posts rise" style="animation-delay:.3s">
-${posts.map((p) => `    <li class="post-row" data-tags="${esc(p.tags.join('|'))}"><a href="/blog/${p.slug}/">
+  ${posts.length ? `<ul class="posts rise"  style="animation-delay:.3s">
+${posts.map((p) => `    <li class="post-row" data-s="${esc([p.title, p.excerpt, p.tags.join(' '), p.text].join(' '))}"><a href="/blog/${p.slug}/">
       <span class="meta">${metaLine(p)}</span>
       <div><h2>${esc(p.title)}</h2><p>${esc(p.excerpt)}</p><div class="tags">${p.tags.map((t) => `<span class="tag">${esc(t)}</span>`).join('')}</div></div>
       ${ICONS.arrow}
     </a></li>`).join('\n')}
-  </ul>` : '<p class="empty">Premier article bientôt.</p>'}
+  </ul>
+  <p class="empty" id="none" hidden>Aucun article pour « <span id="qv"></span> » pour l'instant.</p>` : '<p class="empty">Premier article bientôt.</p>'}
 </main>
 ${foot()}
 <script>
-  (function(){var f=document.getElementById('filters');if(!f)return;
-  f.addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;
-    f.querySelectorAll('button').forEach(function(x){x.classList.toggle('on',x===b);});
-    var t=b.dataset.t;document.querySelectorAll('.post-row').forEach(function(r){
-      r.hidden=!!t&&r.dataset.tags.split('|').indexOf(t)<0;});});})();
+  (function(){var q=document.getElementById('q');if(!q)return;
+  var rows=[].slice.call(document.querySelectorAll('.post-row')),none=document.getElementById('none'),list=document.querySelector('.posts'),qv=document.getElementById('qv');
+  function norm(s){return s.toLowerCase().normalize('NFD').replace(/[\\u0300-\\u036f]/g,'');}
+  rows.forEach(function(r){r._s=norm(r.dataset.s);});
+  function run(){var words=norm(q.value).split(/\\s+/).filter(Boolean),n=0;
+    rows.forEach(function(r){var ok=words.every(function(w){return r._s.indexOf(w)>-1;});r.hidden=!ok;if(ok)n++;});
+    if(none){none.hidden=n>0;list.hidden=n===0;qv.textContent=q.value.trim();}
+    var u=new URL(location.href);q.value.trim()?u.searchParams.set('q',q.value.trim()):u.searchParams.delete('q');history.replaceState(null,'',u);}
+  q.addEventListener('input',run);
+  var init=new URLSearchParams(location.search).get('q');if(init){q.value=init;run();}
+  document.addEventListener('keydown',function(e){if(e.key==='/'&&document.activeElement!==q){e.preventDefault();q.focus();}
+    if(e.key==='Escape'&&document.activeElement===q){q.value='';run();q.blur();}});})();
 </script>
 </body>
 </html>

@@ -4,11 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Blog · Farouk El Makhchoune</title>
-<meta name="description" content="Notes courtes sur l'IA en production : agents, RAG, fine-tuning, OCR et tout ce qui casse entre le notebook et la prod.">
+<meta name="description" content="Architectures de modèles, VLM, librairies Python, frameworks, LangChain, LangGraph : ce que je construis et décortique, un sujet à la fois.">
 <link rel="canonical" href="https://faroukelmak.vercel.app/blog/">
 <meta property="og:type" content="website">
 <meta property="og:title" content="Blog · Farouk El Makhchoune">
-<meta property="og:description" content="Notes courtes sur l'IA en production : agents, RAG, fine-tuning, OCR et tout ce qui casse entre le notebook et la prod.">
+<meta property="og:description" content="Architectures de modèles, VLM, librairies Python, frameworks, LangChain, LangGraph : ce que je construis et décortique, un sujet à la fois.">
 <meta property="og:url" content="https://faroukelmak.vercel.app/blog/">
 <meta property="og:site_name" content="Farouk El Makhchoune">
 <meta name="twitter:card" content="summary">
@@ -33,17 +33,22 @@
 <main class="wrap">
   <header class="blog-head">
     <span class="kicker rise">Blog</span>
-    <h1 class="rise" style="animation-delay:.08s">Notes rapides sur l'IA <em>en production.</em></h1>
-    <p class="rise" style="animation-delay:.16s">Un sujet à la fois, lisible en quelques minutes : agents, RAG, fine-tuning, OCR, et tout ce qui casse entre le notebook et la prod.</p>
-    <div class="filters rise" style="animation-delay:.24s" id="filters"><button class="on" data-t="">Tous</button><button data-t="OCR">OCR</button><button data-t="ONNX">ONNX</button><button data-t="Production">Production</button></div>
+    <h1 class="rise" style="animation-delay:.08s">Ce que je construis, <em>expliqué simplement.</em></h1>
+    <p class="rise" style="animation-delay:.16s">Architectures de modèles, VLM, librairies Python, frameworks, middlewares LangChain, LangGraph… Un sujet à la fois, en quelques minutes de lecture.</p>
+    <label class="search rise" style="animation-delay:.24s">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+      <input id="q" type="search" placeholder="Rechercher : Qwen, LangGraph, VLM…" autocomplete="off" aria-label="Rechercher dans le blog">
+      <kbd>/</kbd>
+    </label>
   </header>
-  <ul class="posts rise" style="animation-delay:.3s">
-    <li class="post-row" data-tags="OCR|ONNX|Production"><a href="/blog/paddleocr-onnx-cpu/">
+  <ul class="posts rise"  style="animation-delay:.3s">
+    <li class="post-row" data-s="PaddleOCR en production sur CPU : pourquoi je suis passé par ONNX Runtime Pas de GPU, des lots de 200+ PDF à contrôler et un PaddlePaddle qui plante au démarrage. Retour sur un choix d'architecture simple qui a débloqué tout le pipeline. OCR ONNX Production Chez Docaposte, j'ai construit une plateforme qui compare des lots de PDF de production avant et après traitement : un tampon ajouté, une conversion de format, et parfois un mot qui disparaît ou un caractère qui se corrompt. Le contrôle se faisait à l'œil, sur une dizaine de paires. Il fallait passer à 200+ PDF par lot , automatiquement. Une partie de ces documents sont des scans. Il faut donc de l'OCR, et c'est là que les ennuis ont commencé. Le contexte : CPU uniquement La plateforme tourne sur des postes et des serveurs sans GPU . Pas de CUDA, pas de cluster : l'OCR doit tenir sur CPU, dans un temps raisonnable, avec des dépendances que l'équipe peut installer sans y passer la journée. PaddleOCR coche beaucoup de cases sur le papier : bons modèles de détection et de reconnaissance, légers, multilingues. Sauf qu'en pratique, le framework natif PaddlePaddle plantait sur notre combinaison Windows + CPU + Python 3.13 . Pas une erreur explicite qu'on corrige en dix minutes : un crash au chargement. La solution : garder les modèles, changer le moteur Les modèles PaddleOCR existent en version ONNX . L'idée est donc simple : garder les poids et le découpage détection → reconnaissance de PaddleOCR ; remplacer le moteur d'inférence PaddlePaddle par ONNX Runtime , qui s'installe avec un simple pip install onnxruntime et tourne partout. On perd un peu de confort le pré et post traitement sont à écrire soi même , mais on gagne exactement ce qui comptait ici : un runtime stable, portable et léger . Ne lancer l'OCR que quand c'est nécessaire Le deuxième gain ne vient pas d'ONNX, mais du routage. La majorité des pages ont déjà une couche texte native. Les passer à l'OCR serait lent et moins fiable que de lire le texte directement. Le pipeline choisit donc une stratégie par page : 1. texte natif : extraction directe avec PyMuPDF, rapide et exacte ; 2. scan : rendu de la page en image, puis OCR via ONNX Runtime ; 3. mixte : les deux, puis fusion. Résultat : environ 3 secondes par PDF en moyenne sur CPU, ce qui rend un lot complet contrôlable sans surveiller la barre de progression. Ce que j'en retiens Le bon modèle ne sert à rien si le runtime ne tient pas dans l'environnement cible. Avant de comparer des scores de précision, je vérifie maintenant trois choses : sur quel matériel le modèle va tourner, qui va l'installer, et s'il existe un export ONNX, en général qui découple le modèle de son framework d'origine. Dans ce projet, c'est cette question qui a débloqué tout le reste."><a href="/blog/paddleocr-onnx-cpu/">
       <span class="meta"><time datetime="2026-11-24">24 nov. 2026</time><span class="sep">·</span>2 min</span>
       <div><h2>PaddleOCR en production sur CPU : pourquoi je suis passé par ONNX Runtime</h2><p>Pas de GPU, des lots de 200+ PDF à contrôler et un PaddlePaddle qui plante au démarrage. Retour sur un choix d'architecture simple qui a débloqué tout le pipeline.</p><div class="tags"><span class="tag">OCR</span><span class="tag">ONNX</span><span class="tag">Production</span></div></div>
       <svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M9 7h8v8"/></svg>
     </a></li>
   </ul>
+  <p class="empty" id="none" hidden>Aucun article pour « <span id="qv"></span> » pour l'instant.</p>
 </main>
 
 <div class="wrap"><footer class="foot">
@@ -55,11 +60,18 @@
   window.addEventListener('scroll',f,{passive:true});f();})();
 </script>
 <script>
-  (function(){var f=document.getElementById('filters');if(!f)return;
-  f.addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;
-    f.querySelectorAll('button').forEach(function(x){x.classList.toggle('on',x===b);});
-    var t=b.dataset.t;document.querySelectorAll('.post-row').forEach(function(r){
-      r.hidden=!!t&&r.dataset.tags.split('|').indexOf(t)<0;});});})();
+  (function(){var q=document.getElementById('q');if(!q)return;
+  var rows=[].slice.call(document.querySelectorAll('.post-row')),none=document.getElementById('none'),list=document.querySelector('.posts'),qv=document.getElementById('qv');
+  function norm(s){return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');}
+  rows.forEach(function(r){r._s=norm(r.dataset.s);});
+  function run(){var words=norm(q.value).split(/\s+/).filter(Boolean),n=0;
+    rows.forEach(function(r){var ok=words.every(function(w){return r._s.indexOf(w)>-1;});r.hidden=!ok;if(ok)n++;});
+    if(none){none.hidden=n>0;list.hidden=n===0;qv.textContent=q.value.trim();}
+    var u=new URL(location.href);q.value.trim()?u.searchParams.set('q',q.value.trim()):u.searchParams.delete('q');history.replaceState(null,'',u);}
+  q.addEventListener('input',run);
+  var init=new URLSearchParams(location.search).get('q');if(init){q.value=init;run();}
+  document.addEventListener('keydown',function(e){if(e.key==='/'&&document.activeElement!==q){e.preventDefault();q.focus();}
+    if(e.key==='Escape'&&document.activeElement===q){q.value='';run();q.blur();}});})();
 </script>
 </body>
 </html>
