@@ -311,7 +311,7 @@ ${nav(p.lang, alt)}
     <h1 class="rise" style="animation-delay:.1s">${esc(p.title)}</h1>
     <p class="lead rise" style="animation-delay:.16s">${esc(p.excerpt)}</p>
     <div class="byline rise" style="animation-delay:.22s">
-      <a class="avatar" href="/" aria-label="${AUTHOR}"><img src="/assets/blog/avatar.webp" alt="${AUTHOR}" width="52" height="52"></a>
+      <a class="avatar" href="/" aria-label="${AUTHOR}"><img src="/assets/blog/avatar.webp" alt="${AUTHOR}" width="48" height="48"></a>
       <div><a class="who" href="/">${AUTHOR}</a><div class="meta"><time datetime="${p.date}">${fmtDate(p.dateObj, p.lang)}</time><span class="sep">·</span>${p.minutes} ${t.read}</div></div>
     </div>
     <div class="prose rise" style="animation-delay:.28s">
