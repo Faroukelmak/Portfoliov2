@@ -7,16 +7,6 @@
   <description>Ideas, notes and discoveries.</description>
   <language>en</language>
   <item>
-    <title>PaddleOCR in production on CPU, and why I went through ONNX Runtime</title>
-    <link>https://faroukelmak.vercel.app/en/blog/paddleocr-onnx-cpu/</link>
-    <guid>https://faroukelmak.vercel.app/en/blog/paddleocr-onnx-cpu/</guid>
-    <pubDate>Tue, 24 Nov 2026 00:00:00 GMT</pubDate>
-    <description>No GPU, batches of 200+ PDFs to check and a PaddlePaddle that crashes on startup. A simple architecture choice that unblocked the whole pipeline.</description>
-    <category>OCR</category>
-    <category>ONNX</category>
-    <category>Production</category>
-  </item>
-  <item>
     <title>Getting Python objects out of an LLM with Pydantic</title>
     <link>https://faroukelmak.vercel.app/en/blog/structured-output-pydantic/</link>
     <guid>https://faroukelmak.vercel.app/en/blog/structured-output-pydantic/</guid>
