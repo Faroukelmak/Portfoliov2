@@ -28,5 +28,16 @@
     <category>LangChain</category>
     <category>LLM</category>
   </item>
+  <item>
+    <title>Getting Python objects out of an LLM with Pydantic (animated version)</title>
+    <link>https://faroukelmak.vercel.app/en/blog/structured-output-pydantic-anime/</link>
+    <guid>https://faroukelmak.vercel.app/en/blog/structured-output-pydantic-anime/</guid>
+    <pubDate>Tue, 24 Nov 2026 00:00:00 GMT</pubDate>
+    <description>An LLM answers in free text while your code expects data. With Pydantic and LangChain's with_structured_output, it returns a typed, validated object.</description>
+    <category>Python</category>
+    <category>Pydantic</category>
+    <category>LangChain</category>
+    <category>LLM</category>
+  </item>
 </channel>
 </rss>
