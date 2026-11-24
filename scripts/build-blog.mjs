@@ -137,7 +137,7 @@ const nav = () => `
 const foot = () => `
 <div class="wrap"><footer class="foot">
   <span>© ${new Date().getFullYear()} ${AUTHOR}</span>
-  <span><a href="/">Portfolio</a> · <a href="/blog/feed.xml">RSS</a> · <a href="${LINKEDIN}" target="_blank" rel="noopener">LinkedIn</a></span>
+  <span><a href="/">Portfolio</a> · <a href="${LINKEDIN}" target="_blank" rel="noopener">LinkedIn</a></span>
 </footer></div>
 <script>
   (function(){var n=document.getElementById('nav');function f(){n.classList.toggle('scrolled',window.scrollY>24);}
