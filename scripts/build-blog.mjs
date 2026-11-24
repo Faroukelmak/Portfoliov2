@@ -347,7 +347,7 @@ ${foot()}
     var code=b.closest('figure').querySelector('code').innerText;
     if(navigator.clipboard)navigator.clipboard.writeText(code).then(function(){b.textContent=${JSON.stringify(t.copiedCode)};setTimeout(function(){b.textContent=${JSON.stringify(t.copy)};},1600);},function(){});});});})();
 </script>
-</body>
+${p.html.includes('class="viz"') ? '<script src="/assets/js/blog-viz.js" defer></script>\n' : ''}</body>
 </html>
 `;
 };

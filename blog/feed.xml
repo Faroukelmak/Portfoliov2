@@ -7,6 +7,17 @@
   <description>Idées, notes et découvertes.</description>
   <language>fr</language>
   <item>
+    <title>Les middlewares LangChain expliqués avec deux exemples concrets</title>
+    <link>https://faroukelmak.vercel.app/blog/langchain-middleware/</link>
+    <guid>https://faroukelmak.vercel.app/blog/langchain-middleware/</guid>
+    <pubDate>Tue, 24 Nov 2026 00:00:00 GMT</pubDate>
+    <description>Un middleware s'insère dans la boucle d'un agent pour agir avant ou après une étape. Deux exemples pour comprendre le principe, le résumé automatique de l'historique et la validation humaine avant une action sensible.</description>
+    <category>LangChain</category>
+    <category>Agents</category>
+    <category>Middleware</category>
+    <category>Python</category>
+  </item>
+  <item>
     <title>Faire répondre un LLM en objets Python avec Pydantic</title>
     <link>https://faroukelmak.vercel.app/blog/structured-output-pydantic/</link>
     <guid>https://faroukelmak.vercel.app/blog/structured-output-pydantic/</guid>
