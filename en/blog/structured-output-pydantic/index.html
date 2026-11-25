@@ -67,6 +67,11 @@ response = model.invoke(<span class="hljs-string">&quot;Give me the details of t
 **Christopher Nolan**. It has a rating of about 8.8/10 and
 follows a thief who steals secrets through dreams...</code></pre></figure>
 <p>To get the year, you would have to search for &quot;2010&quot; in the text with a regex. And the sentence will never be phrased the same way twice.</p>
+<figure class="viz-fig">
+<div class="viz" data-viz="text-to-object"></div>
+<figcaption>The same information, as free text and then stored in an object where each value has a name and a type.</figcaption>
+</figure>
+
 <h2 id="step-1-describe-the-data-with-pydantic">Step 1. Describe the data with Pydantic</h2>
 <p>Write a class that describes <strong>exactly</strong> what you expect. Each field has a type and a description.</p>
 <figure class="code"><figcaption><span>Python</span><button type="button" class="copy-code">Copy</button></figcaption><pre><code class="hljs"><span class="hljs-keyword">from</span> pydantic <span class="hljs-keyword">import</span> BaseModel, Field
@@ -92,11 +97,11 @@ movie = structured_model.invoke(<span class="hljs-string">&quot;Give me the deta
 movie.year + <span class="hljs-number">1</span>  <span class="hljs-comment"># 2011  -&gt; year is a real integer</span></code></pre></figure>
 <h2 id="how-does-it-work">How does it work?</h2>
 <p>LangChain turns the <code>Movie</code> class into a <strong>tool</strong> the model has to fill in. In practice, the model receives something that looks like this.</p>
-<figure class="code out"><figcaption>What the model receives</figcaption><pre><code>Tool &quot;Movie&quot;   A movie with its details.
-  title     string    The title of the movie
-  year      integer   The year the movie was released
-  director  string    The director of the movie
-  rating    number    The rating of the movie, out of 10</code></pre></figure>
+<figure class="viz-fig">
+<div class="viz" data-viz="schema-flow"></div>
+<figcaption>The full journey, from your Python class to the checked object.</figcaption>
+</figure>
+
 <p>The model returns a value for each field, then Pydantic builds the <code>Movie</code> object.</p>
 <p>Key takeaway, <strong>the docstring and the descriptions are part of the prompt</strong>. The model reads them. For example, the <code>rating</code> description says <code>out of 10</code>. Without it, the model could return a score out of 5 or out of 100.</p>
 <h2 id="objects-inside-objects">Objects inside objects</h2>
@@ -115,16 +120,11 @@ movie.year + <span class="hljs-number">1</span>  <span class="hljs-comment"># 20
 details = model.with_structured_output(MovieDetails).invoke(
     <span class="hljs-string">&quot;Give me the details of the movie Inception.&quot;</span>
 )</code></pre></figure>
-<figure class="code out"><figcaption>Result</figcaption><pre><code>MovieDetails(
-    title  = &quot;Inception&quot;,
-    year   = 2010,
-    genres = [&quot;Science fiction&quot;, &quot;Action&quot;, &quot;Thriller&quot;],
-    cast   = [
-        Actor(name=&quot;Leonardo DiCaprio&quot;,    role=&quot;Dom Cobb&quot;),
-        Actor(name=&quot;Joseph Gordon-Levitt&quot;, role=&quot;Arthur&quot;),
-        Actor(name=&quot;Elliot Page&quot;,          role=&quot;Ariadne&quot;),
-    ]
-)</code></pre></figure>
+<figure class="viz-fig">
+<div class="viz" data-viz="nested"></div>
+<figcaption>A MovieDetails object holding a list of strings (genres) and a list of Actor objects (cast).</figcaption>
+</figure>
+
 <p>Each actor is an object too, and you navigate through it naturally.</p>
 <figure class="code"><figcaption><span>Python</span><button type="button" class="copy-code">Copy</button></figcaption><pre><code class="hljs">details.cast[<span class="hljs-number">0</span>].name  <span class="hljs-comment"># &quot;Leonardo DiCaprio&quot;</span>
 <span class="hljs-built_in">len</span>(details.cast)     <span class="hljs-comment"># 3</span></code></pre></figure>
@@ -160,9 +160,20 @@ result[<span class="hljs-string">&quot;structured_response&quot;</span>]</code><
 <h3 id="the-difference-with-pydantic">The difference with Pydantic</h3>
 <p>All three give you structured data. But a TypedDict and a dataclass are only <strong>labels</strong>, and Python checks nothing when the data comes in.</p>
 <figure class="code"><figcaption><span>Python</span><button type="button" class="copy-code">Copy</button></figcaption><pre><code class="hljs">MovieDict(title=<span class="hljs-string">&quot;Inception&quot;</span>, year=<span class="hljs-string">&quot;two thousand ten&quot;</span>)</code></pre></figure>
-<figure class="code out"><figcaption>Result</figcaption><pre><code>{&quot;title&quot;: &quot;Inception&quot;, &quot;year&quot;: &quot;two thousand ten&quot;}    &lt;- accepted, no error</code></pre></figure>
+<figure class="viz-fig">
+<div class="viz" data-viz="labels-vs-check"></div>
+<figcaption>The same nonsense value, accepted by a TypedDict, rejected by Pydantic.</figcaption>
+</figure>
+
 <p>If the model returns a nonsense value, it silently enters your code and breaks something further down. Pydantic <strong>checks every field</strong> on arrival. That is the whole point.</p>
 <h2 id="pydantic-39-s-real-strength-validation">Pydantic&#39;s real strength, validation</h2>
+<p>Before the details, here is what Pydantic does with four values returned by a model.</p>
+<figure class="viz-fig">
+<div class="viz" data-viz="validation-gate"></div>
+<figcaption>Convert, reject, clean. Every value goes through Pydantic before it enters your code.</figcaption>
+</figure>
+
+
 <h3 id="1-it-converts-when-the-intent-is-obvious">1. It converts when the intent is obvious</h3>
 <p>LLMs sometimes add quotes where they should not. Pydantic fixes what is unambiguous.</p>
 <figure class="code"><figcaption><span>Python</span><button type="button" class="copy-code">Copy</button></figcaption><pre><code class="hljs">Movie.model_validate({
@@ -308,7 +319,7 @@ result[<span class="hljs-string">&quot;structured_response&quot;</span>]</code><
       <button type="button" id="copy" data-url="https://faroukelmak.vercel.app/en/blog/structured-output-pydantic/">Copy link</button>
     </div>
     <nav class="pager" aria-label="More articles">
-      <a href="/en/blog/structured-output-pydantic-anime/"><span class="meta">← Previous</span><b>Getting Python objects out of an LLM with Pydantic (animated version)</b></a>
+      <div></div>
       <a class="next" href="/en/blog/langchain-middleware/"><span class="meta">Next →</span><b>LangChain middleware explained with two concrete examples</b></a>
     </nav>
     <aside class="cta-box">
@@ -338,5 +349,6 @@ result[<span class="hljs-string">&quot;structured_response&quot;</span>]</code><
     var code=b.closest('figure').querySelector('code').innerText;
     if(navigator.clipboard)navigator.clipboard.writeText(code).then(function(){b.textContent="Copied";setTimeout(function(){b.textContent="Copy";},1600);},function(){});});});})();
 </script>
+<script src="/assets/js/blog-viz.js" defer></script>
 </body>
 </html>

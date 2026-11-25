@@ -29,6 +29,11 @@ follows a thief who steals secrets through dreams...
 
 To get the year, you would have to search for "2010" in the text with a regex. And the sentence will never be phrased the same way twice.
 
+<figure class="viz-fig">
+<div class="viz" data-viz="text-to-object"></div>
+<figcaption>The same information, as free text and then stored in an object where each value has a name and a type.</figcaption>
+</figure>
+
 ## Step 1. Describe the data with Pydantic
 
 Write a class that describes **exactly** what you expect. Each field has a type and a description.
@@ -72,13 +77,10 @@ movie.year + 1  # 2011  -> year is a real integer
 
 LangChain turns the `Movie` class into a **tool** the model has to fill in. In practice, the model receives something that looks like this.
 
-```output What the model receives
-Tool "Movie"   A movie with its details.
-  title     string    The title of the movie
-  year      integer   The year the movie was released
-  director  string    The director of the movie
-  rating    number    The rating of the movie, out of 10
-```
+<figure class="viz-fig">
+<div class="viz" data-viz="schema-flow"></div>
+<figcaption>The full journey, from your Python class to the checked object.</figcaption>
+</figure>
 
 The model returns a value for each field, then Pydantic builds the `Movie` object.
 
@@ -105,18 +107,10 @@ details = model.with_structured_output(MovieDetails).invoke(
 )
 ```
 
-```output Result
-MovieDetails(
-    title  = "Inception",
-    year   = 2010,
-    genres = ["Science fiction", "Action", "Thriller"],
-    cast   = [
-        Actor(name="Leonardo DiCaprio",    role="Dom Cobb"),
-        Actor(name="Joseph Gordon-Levitt", role="Arthur"),
-        Actor(name="Elliot Page",          role="Ariadne"),
-    ]
-)
-```
+<figure class="viz-fig">
+<div class="viz" data-viz="nested"></div>
+<figcaption>A MovieDetails object holding a list of strings (genres) and a list of Actor objects (cast).</figcaption>
+</figure>
 
 Each actor is an object too, and you navigate through it naturally.
 
@@ -180,13 +174,22 @@ All three give you structured data. But a TypedDict and a dataclass are only **l
 MovieDict(title="Inception", year="two thousand ten")
 ```
 
-```output Result
-{"title": "Inception", "year": "two thousand ten"}    <- accepted, no error
-```
+<figure class="viz-fig">
+<div class="viz" data-viz="labels-vs-check"></div>
+<figcaption>The same nonsense value, accepted by a TypedDict, rejected by Pydantic.</figcaption>
+</figure>
 
 If the model returns a nonsense value, it silently enters your code and breaks something further down. Pydantic **checks every field** on arrival. That is the whole point.
 
 ## Pydantic's real strength, validation
+
+Before the details, here is what Pydantic does with four values returned by a model.
+
+<figure class="viz-fig">
+<div class="viz" data-viz="validation-gate"></div>
+<figcaption>Convert, reject, clean. Every value goes through Pydantic before it enters your code.</figcaption>
+</figure>
+
 
 ### 1. It converts when the intent is obvious
 
