@@ -1,0 +1,8 @@
+{
+  "redirects": [
+    { "source": "/blog/structured-output-pydantic-anime", "destination": "/blog/structured-output-pydantic/", "permanent": true },
+    { "source": "/blog/structured-output-pydantic-anime/", "destination": "/blog/structured-output-pydantic/", "permanent": true },
+    { "source": "/en/blog/structured-output-pydantic-anime", "destination": "/en/blog/structured-output-pydantic/", "permanent": true },
+    { "source": "/en/blog/structured-output-pydantic-anime/", "destination": "/en/blog/structured-output-pydantic/", "permanent": true }
+  ]
+}
