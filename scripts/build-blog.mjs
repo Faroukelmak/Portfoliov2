@@ -198,6 +198,8 @@ ${LANGS.map((l) => `<link rel="alternate" hreflang="${l}" href="${SITE}${alt[l]}
 ${favicon}
 <link rel="preload" href="/assets/fonts/inter-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="/assets/css/blog.css">
+<script>window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };</script>
+<script defer src="/_vercel/insights/script.js"></script>
 ${extra}</head>
 <body>`;
 
